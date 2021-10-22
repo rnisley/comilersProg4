@@ -154,4 +154,53 @@ class nodeNewPar : public Node
     virtual void print(ostream *out = 0);
 };
 
+class nodeBrace : public Node
+{
+  public:
+    nodeBrace(Node *lf=0,Node *rt=0);
+    virtual void print(ostream *out = 0);
+};
+
+class nodeConsDec : public Node
+{
+  public:
+    nodeConsDec(Node *lf=0,Node *rt=0);
+    virtual void print(ostream *out = 0);
+};
+
+class nodeComma : public Node
+{
+  public:
+    nodeComma(Node *lf=0,Node *rt=0);
+    virtual void print(ostream *out = 0);
+};
+
+class nodeWhile : public Node
+{
+  public:
+    nodeWhile(Node *lf=0,Node *rt=0);
+    virtual void print(ostream *out = 0);
+};
+
+class nodeReturn : public Node
+{
+  public:
+    nodeReturn(Node *lf=0,Node *rt=0);
+    virtual void print(ostream *out = 0);
+};
+
+class nodeIf : public Node
+{
+  public:
+    nodeIf(Node *lf=0,Node *rt=0);
+    virtual void print(ostream *out = 0);
+};
+
+class nodeElse : public Node
+{
+  public:
+    nodeElse(Node *lf=0,Node *rt=0);
+    virtual void print(ostream *out = 0);
+};
+
 #endif

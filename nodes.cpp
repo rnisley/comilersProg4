@@ -344,3 +344,124 @@ void nodeBrace::print(ostream *out)
   return;
 }
 
+// Now the nodeConsDec subclass
+
+nodeConsDec::nodeConsDec(Node *lf,Node *rt):
+  Node(lf,rt)
+{}
+
+void nodeConsDec::print(ostream *out)
+{
+    *out << sval << " (";
+  if(left) {
+    left->print(out);
+  }
+    *out << ") ";
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  //*out << endl;
+  return;
+}
+
+// Now the nodeComma subclass
+
+nodeComma::nodeComma(Node *lf,Node *rt):
+  Node(lf,rt)
+{}
+
+void nodeComma::print(ostream *out)
+{
+  if(left) {
+    left->print(out);
+  }
+    *out << ", ";
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  //*out << endl;
+  return;
+}
+
+// Now the nodeWhile subclass
+
+nodeWhile::nodeWhile(Node *lf,Node *rt):
+  Node(lf,rt)
+{}
+
+void nodeWhile::print(ostream *out)
+{
+    *out << "while ";
+  if(left) {
+    left->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  //*out << endl;
+  return;
+}
+
+// Now the nodeReturn subclass
+
+nodeReturn::nodeReturn(Node *lf,Node *rt):
+  Node(lf,rt)
+{}
+
+void nodeReturn::print(ostream *out)
+{
+    *out << "return ";
+  if(left) {
+    left->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  //*out << endl;
+  return;
+}
+
+// Now the nodeIf subclass
+
+nodeIf::nodeIf(Node *lf,Node *rt):
+  Node(lf,rt)
+{}
+
+void nodeIf::print(ostream *out)
+{
+    *out << "if ";
+  if(left) {
+    left->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  //*out << endl;
+  return;
+}
+
+// Now the nodeElse subclass
+
+nodeElse::nodeElse(Node *lf,Node *rt):
+  Node(lf,rt)
+{}
+
+void nodeElse::print(ostream *out)
+{
+    *out << "else ";
+  if(left) {
+    left->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  //*out << endl;
+  return;
+}
+

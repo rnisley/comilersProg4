@@ -1,0 +1,453 @@
+/* vim: ft=yacc
+ * That vim filetype setting is not need if I don't rename the file
+ * Simple Infix notation calculator.  
+ *
+ * program4.ypp
+ * COSC4785
+ * Ric Nisley
+ * 10/9/2021
+ *
+ * based on simple.ypp by kbuckner
+ *
+ */
+
+
+ 
+%{
+
+//#include <cmath> // for pow() in the original version of this
+#include <iostream>
+#include <FlexLexer.h>// yes have to include this here AND in the 'driver'
+#include "nodes.hpp"
+
+//DO NOT USE "namespace std;"
+using std::cerr;
+using std::cout;
+using std::endl;
+
+/*
+ * These are declared in "main" so that we can pass values between
+ * the two portions of the program.
+ */
+
+extern Node *tree;
+extern yyFlexLexer scanner;
+extern int firstColumn;
+extern string id;
+extern string prevId;
+extern string value;
+
+/* 
+ * Need to do this define, an "acceptable" hack to interface
+ * the C++ scanner with the C parser. 
+ * I can still use things like scanner.YYtext() here if I want. Just that
+ * (*bison*) does not know about cpp scanners, only the "C" version. 
+ */
+
+#define yylex() scanner.yylex()
+
+// need the function prototype for the parser. defined it in the lpp file
+
+void yyerror(const char *);
+
+
+/*
+ * There are lots of examples that have multiple types in the union here.
+ * DO NOT DO THAT. Keep it simple, one type. This is the type that you use
+ * in the definitions for %type tokens.
+ */
+
+%}
+
+%union {
+  Node *ttype;
+}
+
+/* 
+ * Bison declarations.  All the 'names' here will be put into an enum
+ * in the *.tab.hpp file. Include that in the .lpp file and then "return NUM;"
+ * passes back the value. 
+ *
+ * To pass the parser a value, say for NUM, you must use 
+ * yylval.ttype in the scanner. You could have a number of things in the union
+ * but do not get cute. pointers, char, int, double. DO NOT use a class or 
+ * struct declaration in the union. 
+ *
+ * The "exp" is only used here in this file but must be given a type if 
+ *(in this case) it is ever assigned a value. See the rules.
+ */
+%type<ttype> exp program classDeclaration vardec type simpletype bracketexps \
+bracketexp name multibrackets newexp classBody vardecs consdecs methdecs \ 
+consdec methdec parList block resType parameters parameter lVarDecs statement \
+statements conStatement opExp arglist exps uOp relOp sumOp prodOp
+%token<ttype> NUM 
+%token RPAREN LPAREN NULLT INT THIS ID DOT LBRACK RBRACK SEMI READ NEW CLASS \
+LBRACE RBRACE VOID COMMA PRINT WHILE RETURN IF ELSE
+%left PLUS MINUS    /* shift-reduce errors are solved by this */
+%left TIMES DIV MOD AND    /* shift-reduce errors are solved by this */
+%left OR EQ NE GE LE GT LT
+%precedence NEG UPLUS    /* negation--unary minus, not using right now*/
+%right NOT 
+
+%% /* The grammar follows.  */
+/* Do yourself a favor. Figure out a 'standard' formatting for this. Otherwise
+ * it will just just be a big mess you cannot find anything in. 
+ * FOLLOW THE STYLE GUIDE. You can use tabs as tabs but NOT indentation. */
+
+program:  classDeclaration {
+                          tree=$1;
+                          $$=$1;
+                        }
+      | program classDeclaration {
+                          $1->setnext($2);
+                          $$=$1;
+                        }
+;  /*trust me, don't forget the semicolon*/
+
+classDeclaration: CLASS ID classBody {
+                        $$ = new Node($3);
+                        $$ = setVal("class " + id);
+                        }
+;
+
+classBody: LBRACE vardecs consdecs methdecs RBRACE {
+                        $$ = new nodeBrace($1, new Node($2, $3));
+                        }
+;
+
+vardecs:                {
+                        }
+        |vardec vardecs {
+                        $$ = new Node($1, $2);
+                        }
+;
+
+consdecs:               {
+                        }
+        |consdec consdecs {
+                        $$ = new Node($1, $2);
+                        }
+;
+
+methdecs:               {
+                        }
+        |methdec methdecs {
+                        $$ = new Node($1, $2);
+                        }
+;
+
+vardec: type ID SEMI     {
+                          $$ = new nodeSem($1);
+                          $$->setval(" " + id);
+                        }
+;
+
+type:  simpletype	      {
+                          $$ = new Node($1);
+                        }
+      |type LBRACK RBRACK {
+                          $$ = new Node($1);
+                          $$->setval("[]");
+                        }
+;
+
+simpletype:  INT	      {
+                          $$= new Node();
+                          $$->setval("int");
+                        }
+            | ID	      {
+                          $$= new Node();
+                          $$->setval(id);
+                        }
+;
+
+consdec: ID LPAREN parList RPAREN block {
+                          $$ = new nodeConsDec($3, $5);
+                          $$->setval(id);
+                        }
+;
+
+methdec: resType ID LPAREN parList RPAREN block {
+                          $$ = new Node($1, new nodeMethDec($4, $6));
+                        }
+;
+
+resType : type          {
+                          $$ = new Node($1);
+                        }
+          | VOID        {
+                          $$ = new Node();
+                          $$->setval("void")
+                        }
+;
+
+parList :               {
+                        }
+         | parameters   {
+                          $$ = new Node($1, $2);
+                        }
+;
+
+parameters: parameter   {
+                          $$ = new Node();
+                        }
+            | parameters COMMA parameter {
+                          $$ = new nodeComma($1, $3);
+                        }
+;
+
+parameter: type ID      {
+                          $$ = new Node($1);
+                          $$->setval(id);
+                        }
+;
+
+block : LBRACE lVarDecs statements RBRACE {
+                          $$ = new nodeBrace($2, $3);
+                        }
+;
+
+lVarDecs:               {
+                        }
+        | lVarDecs type ID SEMI  {
+                          $$ = new nodeSem($1);
+                          $$->setVal(id);
+                        }
+;
+
+statements:             {
+                        }
+            |statement statements {
+                          $$ = new nodeSem($1, $2);
+                        }
+
+statement: SEMI         {
+                          $$ = new nodeSem();
+                        }
+            | name EQ exp SEMI {
+                          $$ = new Node($1,$3);
+                        }
+            | name LPAREN arglist RPAREN SEMI {
+                          $$ = new nodeSem($1, new nodeParExp($3));
+                        }
+            | PRINT LPAREN arglist RPAREN SEMI {
+                          $$ = new Node(new nodeSem($1, new nodeParExp($3)));
+                          $$->setval("print ");
+                        }
+            | conStatement {
+                          $$ = new Node($1);
+                        }
+            | WHILE LPAREN exp RPAREN statement {
+                          $$ = new nodeWhile(new nodeParExp($3), $5);
+                        }
+            | RETURN opExp SEMI {
+                          $$ = new nodeSem(new nodeReturn($2));
+                        }
+            | block     {
+                          $$ = new Node($1);
+                        }
+;
+
+name:   THIS            {
+                          $$ = new Node();
+                          $$->setval("this");
+                        }
+        |ID             {
+                          $$ = new Node();
+                          $$->setval(id);
+                        }
+        |name DOT ID    {
+                          $$ = new Node($1);
+                          $$->setval("." + id);
+                        }
+        |name bracketexp {
+                          $$ = new Node($1, $2);
+                        }
+;
+
+arglist:                {
+                        }
+        | exps          {
+                          $$ = new Node($1);
+                        }
+;
+
+conStatement: IF LPAREN exp RPAREN statement {
+                          $$ = new nodeIf(new nodeParExp($3), $5);
+                        }
+              | IF LPAREN exp RPAREN statement ELSE statement{
+                          $$ = new nodeIf(new nodeParExp($3),\
+                          new Node($5, new nodeElse($7)));
+                        }
+;
+
+opExp:                  {
+                        }
+      | exp             {
+                          $$ = new Node($1);
+                        }
+;
+
+exps: exp               {
+                          $$ = new Node($1);
+                        }
+      | exp COMMA exps  {
+                          $$ = new nodeComma($1,$3);
+                        } 
+;
+
+exp:   name             {
+                          $$ = new Node($1);
+                        }
+       |NUM             { 
+                        //cout << "NUM : " << $1->getint() << endl;        
+                        $$=new nodeNum($1->getint()); delete $1; 
+                        }
+       | NULLT          { 
+                        //cout << "NULL" << endl;
+                        $$=new Node(NULL);
+                        }
+       |name LPAREN arglist RPAREN {
+                           $$ = new Node ($1, new nodePar($3));
+                        }
+       |READ LPAREN RPAREN {
+                          $$ = new nodeRead();
+                        }
+       |newexp          {
+                          $$ = new Node($1);
+                        }
+       |uOp exp         {
+                          $$ = new Node($1, $2);
+                        }
+       | exp relOp exp  { 
+                        $$=new Node(new Node ($1, $2), $3);
+                        }
+       | exp sumOp exp  {
+                        $$=new Node(new Node ($1, $2), $3);
+                        }
+       | exp prodOp exp { 
+                        $$=new Node(new Node ($1, $2), $3);
+                        }
+       | LPAREN exp RPAREN {       
+                        $$=new nodeParExp($2);
+                        }
+;
+
+newexp: NEW ID LPAREN arglist RPAREN {
+                         $$ = new nodeNewPar($4); 
+                         $$->setval(id);
+                        }
+        |NEW simpletype {
+                         $$ = new nodeNew($2); 
+                        }
+        |NEW simpletype bracketexps {
+                         $$ = new nodeNew($2,$3); 
+                        }
+        |NEW simpletype multibrackets {
+                         $$ = new nodeNew($3); 
+                         $$->setval(id);
+                        }
+        |NEW simpletype bracketexps multibrackets {
+                         $$ = new nodeNew($2, new Node($3,$4)); 
+                        }
+      | NEW error       {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error in new expression" << endl;
+                          yyerrok;
+                        }
+;
+
+bracketexps:  bracketexp {
+                          $$ = new Node($1);
+                        }
+              |bracketexps bracketexp {
+                          $$ = new Node($1,$2);
+                        }
+;
+
+bracketexp: LBRACK exp RBRACK {
+                          $$ = new nodeBrackExp($2);
+                        }
+;
+
+multibrackets: LBRACK RBRACK {
+                          $$ = new Node();
+                          $$->setval("[]");
+                        }
+               |multibrackets LBRACK RBRACK {
+                          $$ = new Node($1);
+                          $$->setval("[]");
+                        }
+;
+
+uOp: MINUS exp  %prec NEG {     
+                        $$=new nodeMinus($2);
+                        }
+       | PLUS exp  %prec UPLUS {      
+                        $$=new nodePlus($2);
+                        }
+       | NOT exp        {       
+                        $$=new nodeNot($2);
+                        }
+;
+
+prodOp: TIMES           {
+                          $$ = Node();
+                          $$->setval("*");
+                        }
+        |DIV            {
+                          $$ = Node();
+                          $$->setval("/");
+                        }
+        |MOD            {
+                          $$ = Node();
+                          $$->setval("%");
+                        }
+        |AND            {
+                          $$ = Node();
+                          $$->setval("&&");
+                        }
+;
+
+sumOp:  PLUS            {
+                          $$ = Node();
+                          $$->setval("+");
+                        }
+        |MINUS          {
+                          $$ = Node();
+                          $$->setval("-");
+                        }
+        |OR             {
+                          $$ = Node();
+                          $$->setval("||");
+                        }
+;
+
+relOp:  EQ              {
+                          $$ = new Node();
+                          $$->setval("==");
+                        }
+        |NE            {
+                          $$ = Node();
+                          $$->setval("!=");
+                        }
+        |LE             {
+                          $$ = Node();
+                          $$->setval("<=");
+                        }
+        |GE             {
+                          $$ = Node();
+                          $$->setval("<=");
+                        }
+        |LT             {
+                          $$ = Node();
+                          $$->setval("<");
+                        }      
+        |GT             {
+                          $$ = Node();
+                          $$->setval(">");
+                        }
+;
+
+%%
