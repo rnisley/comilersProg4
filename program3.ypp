@@ -1,0 +1,361 @@
+/* vim: ft=yacc
+ * That vim filetype setting is not need if I don't rename the file
+ * Simple Infix notation calculator.  
+ *
+ * program3.ypp
+ * COSC4785
+ * Ric Nisley
+ * 10/9/2021
+ *
+ * based on simple.ypp by kbuckner
+ *
+ */
+
+
+ 
+%{
+
+//#include <cmath> // for pow() in the original version of this
+#include <iostream>
+#include <FlexLexer.h>// yes have to include this here AND in the 'driver'
+#include "nodes.hpp"
+
+//DO NOT USE "namespace std;"
+using std::cerr;
+using std::cout;
+using std::endl;
+
+/*
+ * These are declared in "main" so that we can pass values between
+ * the two portions of the program.
+ */
+
+extern Node *tree;
+extern yyFlexLexer scanner;
+extern int firstColumn;
+extern string id;
+extern string prevId;
+extern string value;
+
+/* 
+ * Need to do this define, an "acceptable" hack to interface
+ * the C++ scanner with the C parser. 
+ * I can still use things like scanner.YYtext() here if I want. Just that
+ * (*bison*) does not know about cpp scanners, only the "C" version. 
+ */
+
+#define yylex() scanner.yylex()
+
+// need the function prototype for the parser. defined it in the lpp file
+
+void yyerror(const char *);
+
+
+/*
+ * There are lots of examples that have multiple types in the union here.
+ * DO NOT DO THAT. Keep it simple, one type. This is the type that you use
+ * in the definitions for %type tokens.
+ */
+
+%}
+
+%union {
+  Node *ttype;
+}
+
+/* 
+ * Bison declarations.  All the 'names' here will be put into an enum
+ * in the *.tab.hpp file. Include that in the .lpp file and then "return NUM;"
+ * passes back the value. 
+ *
+ * To pass the parser a value, say for NUM, you must use 
+ * yylval.ttype in the scanner. You could have a number of things in the union
+ * but do not get cute. pointers, char, int, double. DO NOT use a class or 
+ * struct declaration in the union. 
+ *
+ * The "exp" is only used here in this file but must be given a type if 
+ *(in this case) it is ever assigned a value. See the rules.
+ */
+%type<ttype> exp program classDeclaration vardec type simpletype bracketexps bracketexp name
+%type<ttype> multibrackets newexp classBody vardecs consdecs methdecs consdec methdec
+%token<ttype> NUM 
+%token RPAREN LPAREN NULLT INT THIS ID DOT LBRACK RBRACK SEMI READ NEW CLASS LBRACE RBRACE
+%left PLUS MINUS    /* shift-reduce errors are solved by this */
+%left TIMES DIV MOD AND    /* shift-reduce errors are solved by this */
+%left OR EQ NE GE LE GT LT
+%precedence NEG UPLUS    /* negation--unary minus, not using right now*/
+%right EXP NOT         /* exponentiation */
+
+%% /* The grammar follows.  */
+/* Do yourself a favor. Figure out a 'standard' formatting for this. Otherwise
+ * it will just just be a big mess you cannot find anything in. 
+ * FOLLOW THE STYLE GUIDE. You can use tabs as tabs but NOT indentation. */
+
+program:  classDeclaration {
+                          tree=$1;
+                          $$=$1;
+                        }
+      | program classDeclaration {
+                          $1->setnext($2);
+                          $$=$1;
+                        }
+;  /*trust me, don't forget the semicolon*/
+
+classDeclaration: CLASS ID classBody {
+                        $$ = new Node($3);
+                        $$ = setVal("class " + id);
+                        }
+;
+
+classBody: LBRACE vardecs consdecs methdecs RBRACE {
+                        $$ = new nodeBrace($1, new Node($2, $3));
+                        }
+;
+
+vardecs: 
+        |vardec vardecs {
+                        $$ = new Node($1);
+                        }
+;
+
+consdecs:
+        |consdec consdecs {
+                        $$ = new Node($1);
+                        }
+;
+
+methdecs:
+        |methdec methdecs {
+                        $$ = new Node($1);
+                        }
+;
+
+elements:  vardec	      {
+                         $$ = new Node($1);
+                        }
+      | exp SEMI        {
+                         $$ = new nodeSem($1);
+                        }
+      | error SEMI      {
+                          cout << scanner.lineno() << ":" << firstColumn << ":: "; //<<contents of line << endl;
+                          cout << "Invalid expression or variable declaration" << endl;
+                          yyerrok;
+                        }
+      | exp error       {
+                          cout << scanner.lineno() << ":" << firstColumn << ":: "; //<<contents of line << endl;
+                          cout << "Suspected missing semicolon after expression" << endl;
+                          yyerrok;
+                        }
+;
+
+vardec: type ID SEMI     {
+                          $$ = new nodeSem($1);
+                          $$->setval(" " + id);
+                        }
+;
+
+exp:   name             {
+                          $$ = new Node($1);
+                        }
+       |SEMI            {
+                          $$ = new Node();
+                          $$->setval(";");
+                        }
+       |NUM             { 
+                        //cout << "NUM : " << $1->getint() << endl;        
+                        $$=new nodeNum($1->getint()); delete $1; 
+                        }
+       | NULLT          { 
+                        //cout << "NULL" << endl;
+                        $$=new Node(NULL);
+                        }
+       |READ LPAREN RPAREN {
+                          $$ = new nodeRead();
+                        }
+       |newexp          {
+                           $$ = new Node($1);
+                        }
+       |name LPAREN RPAREN {
+                           $$ = new nodePar($1);
+                        }
+       | exp PLUS exp   { 
+                        //cout << "e + e : ";
+                        //cout << $1->getint() << " + " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" + ");
+                        }
+       | exp MINUS exp  { 
+                        //cout << "e - e : ";
+                        //cout << $1->getint() << " - " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" - ");
+                        }
+       | exp OR exp     { 
+                        //cout << "e || e : ";
+                        //cout << $1->getint() << " || " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" || ");
+                        }
+       | exp TIMES exp  { 
+                        //cout << "e * e : ";
+                        //cout << $1->getint() << " * " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" * ");
+                        }
+       | exp DIV exp    { 
+                        //cout << "e / e : ";
+                        //cout << $1->getint() << " / " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" / ");
+                        }
+       | exp MOD exp    { 
+                        //cout << "e % e : ";
+                        //cout << $1->getint() << " % " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" % ");
+                        }
+       | exp AND exp    { 
+                        //cout << "e && e : ";
+                        //cout << $1->getint() << " && " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" && ");
+                        }
+       | exp EQ exp     { 
+                        //cout << "e == e : ";
+                        //cout << $1->getint() << " == " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" == ");
+                        }
+       | exp NE exp     { 
+                        //cout << "e != e : ";
+                        //cout << $1->getint() << " != " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" != ");
+                        }
+       | exp GE exp     { 
+                        //cout << "e >= e : ";
+                        //cout << $1->getint() << " >= " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" >= ");
+                        }
+       | exp LE exp     { 
+                        //cout << "e <= e : ";
+                        //cout << $1->getint() << " <= " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" <= ");
+                        }
+       | exp GT exp     { 
+                        //cout << "e > e : ";
+                        //cout << $1->getint() << " > " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" > ");
+                        }
+       | exp LT exp     { 
+                        //cout << "e < e : ";
+                        //cout << $1->getint() << " < " << $3->getint() << endl; 
+                        $$=new Node($1,$3);
+                        $$->setval(" < ");
+                        }
+       | exp EXP exp    { 
+                        //cout << "e ^ e : " ;
+                        //cout << $1->getint() << " ^ " << $3->getint() << endl; 
+                        $$=new nodeExpExp($1,$3); 
+                        }
+       | MINUS exp  %prec NEG { 
+                        //cout << "- e : " << $2->getint() << endl;       
+                        $$=new nodeMinus($2);
+                        }
+       | PLUS exp  %prec UPLUS { 
+                        //cout << "- e : " << $2->getint() << endl;       
+                        $$=new nodePlus($2);
+                        }
+       | LPAREN exp RPAREN    { 
+                        //cout << "(e) :" << $2->getint() << endl;        
+                        $$=new nodeParExp($2);
+                        }
+       | NOT exp        { 
+                        //cout << "!e : " << $2->getint() << endl;       
+                        $$=new nodeNot($2);
+                        }
+;
+
+newexp: NEW ID LPAREN RPAREN {
+                         $$ = new nodeNewPar(); 
+                         $$->setval(id);
+                        }
+        |NEW simpletype {
+                         $$ = new nodeNew($2); 
+                        }
+        |NEW simpletype bracketexps {
+                         $$ = new nodeNew($2,$3); 
+                        }
+        |NEW ID bracketexps {
+                         $$ = new nodeNew($3); 
+                         $$->setval(id);
+                        }
+        |NEW simpletype bracketexps multibrackets {
+                         $$ = new nodeNew($2, new Node($3,$4)); 
+                        }
+        |NEW ID bracketexps multibrackets{
+                         $$ = new nodeNew($3,$4); 
+                         $$->setval(id);
+                        }
+      | NEW error       {
+                          cout << scanner.lineno() << ":" << firstColumn << ":: "; //<<contents of line << endl;
+                          cout << "Error in new expression" << endl;
+                          yyerrok;
+                        }
+;
+
+type:  simpletype	      {
+                         $$ = new Node($1);
+                        }
+;
+
+simpletype:  INT	      {
+                          $$= new Node();
+                          $$->setval("int");
+                        }
+;
+
+bracketexps:  bracketexp {
+                          $$ = new Node($1);
+                        }
+              |bracketexps bracketexp {
+                          $$ = new Node($1,$2);
+                        }
+;
+
+bracketexp: LBRACK exp RBRACK {
+                          $$ = new nodeBrackExp($2);
+                        }
+;
+
+multibrackets: LBRACK RBRACK {
+                          $$ = new Node();
+                          $$->setval("[]");
+                        }
+               |multibrackets LBRACK RBRACK {
+                          $$ = new Node($1);
+                          $$->setval("[]");
+                        }
+;
+
+name:   THIS            {
+                          $$ = new Node();
+                          $$->setval("this");
+                        }
+        |ID             {
+                          $$ = new Node();
+                          $$->setval(id);
+                        }
+        |name DOT ID    {
+                          $$ = new Node($1);
+                          $$->setval("." + id);
+                        }
+        |name bracketexp {
+                          $$ = new Node($1, $2);
+                        }
+;
+
+%%
