@@ -1,13 +1,13 @@
-// program3.cpp
+// program4.cpp
 // Ric Nisley
 // COSC 4785 Fall 2021
-// Program 03
-// 10/9/21
+// Program 04
+// 10/22/21
 #include <iostream>
 #include <fstream>
 #include <string>
 #include "nodes.hpp"
-#include "program3.tab.hpp"
+#include "program4.tab.hpp"
 #include <FlexLexer.h>
 
 using std::cerr;

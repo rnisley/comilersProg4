@@ -24,6 +24,10 @@ Node::~Node()
   if(right) delete right;
 }
 
+int Node::getcol() const
+{
+  return mycol;
+}
 int Node::getint() const
 {
   return ival;
@@ -100,210 +104,6 @@ Node* Node::getnext()
 void Node::print(ostream *out)
 {
   if(left) left->print(out);
-  *out << sval ;
-  if(right) right->print(out);
-  //*out << endl;
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  return;
-}
-
-// Now the nodeMinus subclass
-
-nodeMinus::nodeMinus(Node *lf,Node *rt):
-  Node(lf,rt)
-{}
-
-void nodeMinus::print(ostream *out)
-{
-  if(left) {
-    *out << "-";
-    left->print(out);
-  }
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  //*out << endl;
-  return;
-}
-
-// Now the nodePlus subclass
-
-nodePlus::nodePlus(Node *lf,Node *rt):
-  Node(lf,rt)
-{}
-
-void nodePlus::print(ostream *out)
-{
-  if(left) {
-    *out << "+";
-    left->print(out);
-  }
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  //*out << endl;
-  return;
-}
-
-
-// Now the nodeNot subclass
-
-nodeNot::nodeNot(Node *lf,Node *rt):
-  Node(lf,rt)
-{}
-
-void nodeNot::print(ostream *out)
-{
-  if(left) {
-    *out << "!";
-    left->print(out);
-  }
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  //*out << endl;
-  return;
-}
-
-// And the nodeNum subclass
-
-nodeNum::nodeNum(int i)
-{
-  ival=i;
-};
-
-void nodeNum::print(ostream *out)
-{
-  *out << ival;
-  return;
-}
-
-// Here is nodeParExp subclass
-
-nodeParExp::nodeParExp(Node *lf,Node *rt):Node(lf,rt){}
-
-void nodeParExp::print(ostream *out)
-{
-  *out << "( ";
-  if(left) left->print(out);
-  if(right) right->print(out);
-  *out << " )" ;//<< endl;
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  return;
-}
-
-// Here is nodeBrackExp subclass
-
-nodeBrackExp::nodeBrackExp(Node *lf,Node *rt):Node(lf,rt){}
-
-void nodeBrackExp::print(ostream *out)
-{
-  *out << "[";
-  if(left) left->print(out);
-  if(right) right->print(out);
-  *out << "]" ;//<< endl;
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  return;
-}
-
-nodeExpExp::nodeExpExp(Node *lf,Node *rt):Node(lf,rt){}
-void nodeExpExp::print(ostream *out)
-{
-  if(left) left->print(out);
-  *out << "^";
-  if(right) right->print(out);
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-}
-
-// Here is nodeSem subclass
-
-nodeSem::nodeSem(Node *lf,Node *rt):Node(lf,rt){}
-
-void nodeSem::print(ostream *out)
-{
-  if(left) left->print(out);
-  if(right) right->print(out);
-  if(sval.length()>0)*out << sval;
-  *out << ";" ;//<< endl;
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  return;
-}
-
-// Here is nodeIdMulIdSem subclass
-
-nodeIdMulIdSem::nodeIdMulIdSem(Node *lf,Node *rt):Node(lf,rt){}
-
-void nodeIdMulIdSem::print(ostream *out)
-{
-  *out << firstid;
-  if(left) left->print(out);
-  if(right) right->print(out);
-  if(sval.length()>0)*out << sval;
-  *out << ";" ;//<< endl;
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  return;
-}
-
-// Here is nodeRead subclass
-
-nodeRead::nodeRead()
-{
-  sval = "read()";
-}
-
-void nodeRead::print(ostream *out)
-{
-  *out << "read()";
-  return;
-}
-
-// Here is nodePar subclass
-
-nodePar::nodePar(Node *lf,Node *rt):Node(lf,rt){}
-
-void nodePar::print(ostream *out)
-{
-  if(left) left->print(out);
-  if(right) right->print(out);
-  *out << "()" ;//<< endl;
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  return;
-}
-
-// Here is nodeNew subclass
-
-nodeNew::nodeNew(Node *lf,Node *rt):Node(lf,rt){}
-
-void nodeNew::print(ostream *out)
-{
-
-  *out << "new " ;//<< endl;
-  *out << sval ;
-  if(left) left->print(out);
   if(right) right->print(out);
   if(next) {
     *out << endl;
@@ -312,156 +112,1200 @@ void nodeNew::print(ostream *out)
   return;
 }
 
-// Here is nodeNewPar subclass
 
-nodeNewPar::nodeNewPar(){}
-
-void nodeNewPar::print(ostream *out)
-{
-
-  *out << "new " + sval + "()" ;//<< endl;
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  return;
-}
-
-// Here is nodeBrace subclass
-
-nodeBrace::nodeBrace(Node *lf,Node *rt):Node(lf,rt){}
-
-void nodeBrace::print(ostream *out)
-{
-  *out << "{";
-  if(left) left->print(out);
-  if(right) right->print(out);
-  *out << "}" ;//<< endl;
-  if(next) {
-    *out << endl;
-    next->print(out);
-  }
-  return;
-}
-
-// Now the nodeConsDec subclass
-
-nodeConsDec::nodeConsDec(Node *lf,Node *rt):
+nodeClassDec::nodeClassDec(int col, int option, Node *lf,Node *rt):
   Node(lf,rt)
-{}
-
-void nodeConsDec::print(ostream *out)
 {
-    *out << sval << " (";
+  mycol = col;
+  choice = option;
+}
+
+void nodeClassDec::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "<classDeclaration> -> CLASS ID <classBody>" << endl;
+  for (int i = 0; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "ID -> " << sval << endl;
+
   if(left) {
     left->print(out);
   }
-    *out << ") ";
+  if(right) {
+    right->print(out);
+  }
   if(next) {
     *out << endl;
     next->print(out);
   }
-  //*out << endl;
   return;
 }
 
-// Now the nodeComma subclass
 
-nodeComma::nodeComma(Node *lf,Node *rt):
+nodeClassBody::nodeClassBody(int col, int option, Node *lf,Node *rt):
   Node(lf,rt)
-{}
-
-void nodeComma::print(ostream *out)
 {
+  mycol = col;
+  choice = option;
+}
+
+void nodeClassBody::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "<classBody> -> { <vardecs> <consdecs> <methdecs> }" << endl;
+
   if(left) {
     left->print(out);
   }
-    *out << ", ";
+  if(right) {
+    right->print(out);
+  }
   if(next) {
     *out << endl;
     next->print(out);
   }
-  //*out << endl;
   return;
 }
 
-// Now the nodeWhile subclass
 
-nodeWhile::nodeWhile(Node *lf,Node *rt):
+nodeVardecs::nodeVardecs(int col, int option, Node *lf,Node *rt):
   Node(lf,rt)
-{}
-
-void nodeWhile::print(ostream *out)
 {
-    *out << "while ";
+  mycol = col;
+  choice = option;
+}
+
+void nodeVardecs::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<vardecs> -> %empty" << endl;
+    break;
+  case 2:
+    *out << "<vardecs> -> <vardecs> <vardec>" << endl;
+    break;
+  default:
+    break;
+  }
+  
   if(left) {
     left->print(out);
   }
+  if(right) {
+    right->print(out);
+  }
   if(next) {
     *out << endl;
     next->print(out);
   }
-  //*out << endl;
   return;
 }
 
-// Now the nodeReturn subclass
 
-nodeReturn::nodeReturn(Node *lf,Node *rt):
+nodeConsdecs::nodeConsdecs(int col, int option, Node *lf,Node *rt):
   Node(lf,rt)
-{}
-
-void nodeReturn::print(ostream *out)
 {
-    *out << "return ";
+  mycol = col;
+  choice = option;
+}
+
+void nodeConsdecs::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<consdecs> -> %empty" << endl;
+    break;
+  case 2:
+    *out << "<consdecs> -> <consdecs> <consdec>" << endl;
+    break;
+  
+  default:
+    break;
+  }
+  
   if(left) {
     left->print(out);
   }
+  if(right) {
+    right->print(out);
+  }
   if(next) {
     *out << endl;
     next->print(out);
   }
-  //*out << endl;
   return;
 }
 
-// Now the nodeIf subclass
 
-nodeIf::nodeIf(Node *lf,Node *rt):
+nodeMethdecs::nodeMethdecs(int col, int option, Node *lf,Node *rt):
   Node(lf,rt)
-{}
-
-void nodeIf::print(ostream *out)
 {
-    *out << "if ";
+  mycol = col;
+  choice = option;
+}
+
+void nodeMethdecs::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<methdecs> -> %empty" << endl;
+    break;
+  case 2:
+    *out << "<methdecs> -> <methdecs> <methdec>" << endl;
+    break;
+  
+  default:
+    break;
+  }
+  
   if(left) {
     left->print(out);
   }
+  if(right) {
+    right->print(out);
+  }
   if(next) {
     *out << endl;
     next->print(out);
   }
-  //*out << endl;
   return;
 }
 
-// Now the nodeElse subclass
 
-nodeElse::nodeElse(Node *lf,Node *rt):
+nodeVardec::nodeVardec(int col, int option, Node *lf,Node *rt):
   Node(lf,rt)
-{}
-
-void nodeElse::print(ostream *out)
 {
-    *out << "else ";
+  mycol = col;
+  choice = option;
+}
+
+void nodeVardec::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "<vardec> -> <type> ID ;" << endl;
+  
   if(left) {
     left->print(out);
   }
+  if(right) {
+    right->print(out);
+  }
+
+  for (int i = 0; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "ID -> " << sval << endl;
+
   if(next) {
     *out << endl;
     next->print(out);
   }
-  //*out << endl;
   return;
 }
 
+
+nodeType::nodeType(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeType::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<type> -> <simpletype>" << endl;
+    break;
+  case 2:
+    *out << "<type> -> <type> []" << endl;
+    break;
+  
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeSimpletype::nodeSimpletype(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeSimpletype::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<simpletype> -> INT" << endl;
+    break;
+  case 2:
+    *out << "<simpletype> -> ID []" << endl;
+    for (int i = 0; i < mycol; i++)
+    {
+      *out << '\t';
+    }
+    *out << "ID -> " << ival;
+    break;
+  
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeConsdec::nodeConsdec(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeConsdec::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "<consdec> -> ID ( <parlist> ) <block>" << endl;
+  
+  for (int i = 0; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "ID -> " << sval << endl;
+
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeMethdec::nodeMethdec(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeMethdec::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "<methdec> -> <resType> ID ( <parList> ) <block>" << endl;
+ 
+  if(left) {
+    left->print(out);
+  }
+
+  for (int i = 0; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "ID -> " << sval << endl;
+
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeRestype::nodeRestype(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeRestype::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<resType> -> <type>" << endl;
+    break;
+  case 2:
+    *out << "<resType> -> VOID" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeParlist::nodeParlist(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeParlist::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<parList> -> %empty" << endl;
+    break;
+  case 2:
+    *out << "<parList> -> <parameters>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeParameters::nodeParameters(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeParameters::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<parameters> -> <parameter>" << endl;
+    break;
+  case 2:
+    *out << "<parameters> -> <parameters> , <parameter>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeParameter::nodeParameter(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeParameter::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "<parameter> -> <type> ID" << endl;
+  
+  for (int i = 0; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "ID -> " << sval << endl;
+
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeBlock::nodeBlock(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeBlock::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "<block> -> { <lVarDecs> <statements> }" << endl;
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeLVarDecs::nodeLVarDecs(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeLVarDecs::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<lVarDecs> -> %empty" << endl;
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+    break;
+  case 2:
+    *out << "<lVarDecs> -> <lVarDecs> <type> ID ;" << endl;
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+    for (int i = 0; i < mycol; i++)
+    {
+      *out << '\t';
+    }
+    *out << "ID -> " << sval << endl;
+    break;
+  default:
+    break;
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeStatements::nodeStatements(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeStatements::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<statements> -> %empty" << endl;
+    break;
+  case 2:
+    *out << "<statements> -> <statements> <statement>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeStatement::nodeStatement(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeStatement::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<statement> -> ;" << endl;
+    break;
+  case 2:
+    *out << "<statement> -> <name> == <exp> ;" << endl;
+    break;
+  case 3:
+    *out << "<statement> -> <name> ( <arglist> ) ;" << endl;
+    break;
+  case 4:
+    *out << "<statement> -> PRINT ( <arglist> ) ;" << endl;
+    break;
+  case 5:
+    *out << "<statement> -> <name> ( <arglist> ) ;" << endl;
+    break;
+  case 6:
+    *out << "<statement> -> <conStatement>" << endl;
+    break;
+  case 7:
+    *out << "<statement> -> WHILE ( <exp> ) <statement>" << endl;
+    break;
+  case 8:
+    *out << "<statement> -> <block>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeName::nodeName(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeName::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<name> -> THIS" << endl;
+    if(left) {
+      left->print(out);
+    }
+    if(right) {
+      right->print(out);
+    }
+    break;
+  case 2:
+    *out << "<name> -> ID" << endl;
+    for (int i = 0; i < mycol; i++)
+    {
+      *out << '\t';
+    }
+    *out << "ID -> " << sval << endl;
+    if(left) {
+      left->print(out);
+    }
+    if(right) {
+      right->print(out);
+    }
+    break;
+  case 3:
+    *out << "<name> -> <name> . ID ;" << endl;
+    if(left) {
+      left->print(out);
+    }
+    if(right) {
+      right->print(out);
+    }
+    for (int i = 0; i < mycol; i++)
+    {
+      *out << '\t';
+    }
+    *out << "ID -> " << sval << endl;
+    break;
+  case 4:
+    *out << "<name> -> <name> <bracketexp>" << endl;
+    if(left) {
+      left->print(out);
+    }
+    if(right) {
+      right->print(out);
+    }
+    break;
+  default:
+    break;
+  }
+
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeArglist::nodeArglist(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeArglist::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<arglist> -> %empty" << endl;
+    break;
+  case 2:
+    *out << "<arglist> -> <exps>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeConStatement::nodeConStatement(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeConStatement::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<conStatement> -> IF ( <exp> ) <statement>" << endl;
+    break;
+  case 2:
+    *out << "<conStatement> -> IF ( <exp> ) <statement> ELSE <statement>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeOpExp::nodeOpExp(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeOpExp::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<opExp> -> %empty" << endl;
+    break;
+  case 2:
+    *out << "<opExp> -> <exp>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeExps::nodeExps(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeExps::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<exps> -> <exp>" << endl;
+    break;
+  case 2:
+    *out << "<exps> -> <exp> , <exps>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeExp::nodeExp(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeExp::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<exp> -> <name>" << endl;
+    break;
+  case 2:
+    *out << "<exp> -> NUM" << endl;
+    for (int i = 0; i < mycol; i++)
+    {
+      *out << '\t';
+    }
+    *out << "NUM -> " << ival << endl;
+    break;
+  case 3:
+    *out << "<exp> -> NULLT" << endl;
+    break;
+  case 4:
+    *out << "<exp> -> <name> ( <arglist> )" << endl;
+    break;
+  case 5:
+    *out << "<exp> -> READ ( )" << endl;
+    break;
+  case 6:
+    *out << "<exp> -> <newexp>" << endl;
+    break;
+  case 7:
+    *out << "<exp> -> <exp> + <exp>" << endl;
+    break;
+  case 8:
+    *out << "<exp> -> <exp> - <exp>" << endl;
+    break;
+  case 9:
+    *out << "<exp> -> <exp> || <exp>" << endl;
+    break;
+  case 10:
+    *out << "<exp> -> <exp> * <exp>" << endl;
+    break;
+  case 11:
+    *out << "<exp> -> <exp> / <exp>" << endl;
+    break;
+  case 12:
+    *out << "<exp> -> <exp> % <exp>" << endl;
+    break;
+  case 13:
+    *out << "<exp> -> <exp> && <exp>" << endl;
+    break;
+  case 14:
+    *out << "<exp> -> <exp> == <exp>" << endl;
+    break;
+  case 15:
+    *out << "<exp> -> <exp> != <exp>" << endl;
+    break;
+  case 16:
+    *out << "<exp> -> <exp> >= <exp>" << endl;
+    break;
+  case 17:
+    *out << "<exp> -> <exp> <= <exp>" << endl;
+    break;
+  case 18:
+    *out << "<exp> -> <exp> > <exp>" << endl;
+    break;
+  case 19:
+    *out << "<exp> -> <exp> < <exp>" << endl;
+    break;
+  case 20:
+    *out << "<exp> -> - <exp>" << endl;
+    break;
+  case 21:
+    *out << "<exp> -> + <exp>" << endl;
+    break;
+  case 22:
+    *out << "<exp> -> ( <exp> )" << endl;
+    break;
+  case 23:
+    *out << "<exp> -> ! <exp>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeNewexp::nodeNewexp(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeNewexp::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<newexp> -> NEW ID ( <arglist> )" << endl;
+    for (int i = 1; i < mycol; i++)
+    {
+      *out << '\t';
+    }
+    *out << "ID -> " << sval << endl;
+    break;
+  case 2:
+    *out << "<newexp> -> NEW <simpletype>" << endl;
+    break;
+  case 3:
+    *out << "<newexp> -> NEW <simpletype> <bracketexps>" << endl;
+    break;
+  case 4:
+    *out << "<newexp> -> NEW <simpletype> <multibrackets>" << endl;
+    break;
+  case 5:
+    *out << "<newexp> -> NEW <simpletype> <bracketexps> <multibrackets>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeBracketExps::nodeBracketExps(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeBracketExps::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<bracketexps> -> <bracketexp>" << endl;
+    break;
+  case 2:
+    *out << "<bracketexps> -> <bracketexps> <bracketexp>" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeBracketExp::nodeBracketExp(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeBracketExp::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  *out << "<bracketexp> -> [ <exp> ]" << endl;
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeMultibrackets::nodeMultibrackets(int col, int option, Node *lf,Node *rt):
+  Node(lf,rt)
+{
+  mycol = col;
+  choice = option;
+}
+
+void nodeMultibrackets::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << '\t';
+  }
+  switch (choice)
+  {
+  case 1:
+    *out << "<multibrackets> -> [ ]" << endl;
+    break;
+  case 2:
+    *out << "<multibrackets> -> <multibrackets> [ ]" << endl;
+    break;
+  default:
+    break;
+  }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}

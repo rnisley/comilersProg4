@@ -211,7 +211,7 @@ void yyerror(const char *string)
                   firstColumn = nextColumn;
                   nextColumn = nextColumn + yyleng;
                   token = "EXP";
-                  return EXP;
+                  return 1;
                 }
 
   /*

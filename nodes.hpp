@@ -32,6 +32,7 @@ class Node
     Node(Node *lf=0,Node *rt=0) ;
     virtual ~Node();
     int getint() const;
+    int getcol() const;
     double getdbl() const;
     string getstring() const;
     void setval(const char *v);
@@ -49,6 +50,7 @@ class Node
     virtual void print(ostream *out = 0);
 
   protected:
+    int choice;
     int myline;
     int mycol;
     int ival;
@@ -59,147 +61,227 @@ class Node
     Node *next;
 };
 
-class nodeMinus : public Node
+class nodeClassDec : public Node
 {
   public:
-    nodeMinus(Node *lf=0,Node *rt=0);
+    nodeClassDec(int col, int choice, Node *lf=0,Node *rt=0);
 
     virtual void print(ostream *out = 0);
 };
 
-class nodePlus : public Node
+class nodeClassBody : public Node
 {
   public:
-    nodePlus(Node *lf=0,Node *rt=0);
+    nodeClassBody(int col, int choice, Node *lf=0,Node *rt=0);
 
     virtual void print(ostream *out = 0);
 };
 
-class nodeNot : public Node
+class nodeVardecs : public Node
 {
   public:
-    nodeNot(Node *lf=0,Node *rt=0);
+    nodeVardecs(int col, int choice, Node *lf=0,Node *rt=0);
 
     virtual void print(ostream *out = 0);
 };
 
-class nodeNum : public Node
+class nodeConsdecs : public Node
 {
   public:
-    nodeNum(int i);
+    nodeConsdecs(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeParExp : public Node
+class nodeMethdecs : public Node
 {
   public:
-    nodeParExp(Node *lf=0,Node *rt=0);
+    nodeMethdecs(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeBrackExp : public Node
+class nodeVardec : public Node
 {
   public:
-    nodeBrackExp(Node *lf=0,Node *rt=0);
+    nodeVardec(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeExpExp : public Node
+class nodeType : public Node
 {
   public:
-    nodeExpExp(Node *lf=0,Node *rt=0);
+    nodeType(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeSem : public Node
+class nodeSimpletype : public Node
 {
   public:
-    nodeSem(Node *lf=0,Node *rt=0);
+    nodeSimpletype(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeIdMulIdSem : public Node
+class nodeConsdec : public Node
 {
   public:
-    nodeIdMulIdSem(Node *lf=0,Node *rt=0);
+    nodeConsdec(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-
-class nodeRead : public Node
+class nodeMethdec : public Node
 {
   public:
-    nodeRead();
+    nodeMethdec(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodePar : public Node
+class nodeRestype : public Node
 {
   public:
-    nodePar(Node *lf=0,Node *rt=0);
+    nodeRestype(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeNew : public Node
+class nodeParlist : public Node
 {
   public:
-    nodeNew(Node *lf=0,Node *rt=0);
+    nodeParlist(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeNewPar : public Node
+class nodeParameters : public Node
 {
   public:
-    nodeNewPar();
+    nodeParameters(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeBrace : public Node
+class nodeParameter : public Node
 {
   public:
-    nodeBrace(Node *lf=0,Node *rt=0);
+    nodeParameter(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeConsDec : public Node
+class nodeBlock : public Node
 {
   public:
-    nodeConsDec(Node *lf=0,Node *rt=0);
+    nodeBlock(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeComma : public Node
+class nodeLVarDecs : public Node
 {
   public:
-    nodeComma(Node *lf=0,Node *rt=0);
+    nodeLVarDecs(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeWhile : public Node
+class nodeStatements : public Node
 {
   public:
-    nodeWhile(Node *lf=0,Node *rt=0);
+    nodeStatements(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeReturn : public Node
+class nodeStatement : public Node
 {
   public:
-    nodeReturn(Node *lf=0,Node *rt=0);
+    nodeStatement(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeIf : public Node
+class nodeName : public Node
 {
   public:
-    nodeIf(Node *lf=0,Node *rt=0);
+    nodeName(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
-class nodeElse : public Node
+class nodeArglist : public Node
 {
   public:
-    nodeElse(Node *lf=0,Node *rt=0);
+    nodeArglist(int col, int choice, Node *lf=0,Node *rt=0);
+
+    virtual void print(ostream *out = 0);
+};
+
+class nodeConStatement : public Node
+{
+  public:
+    nodeConStatement(int col, int choice, Node *lf=0,Node *rt=0);
+
+    virtual void print(ostream *out = 0);
+};
+
+class nodeOpExp : public Node
+{
+  public:
+    nodeOpExp(int col, int choice, Node *lf=0,Node *rt=0);
+
+    virtual void print(ostream *out = 0);
+};
+
+class nodeExps : public Node
+{
+  public:
+    nodeExps(int col, int choice, Node *lf=0,Node *rt=0);
+
+    virtual void print(ostream *out = 0);
+};
+
+class nodeExp : public Node
+{
+  public:
+    nodeExp(int col, int choice, Node *lf=0,Node *rt=0);
+
+    virtual void print(ostream *out = 0);
+};
+
+class nodeNewexp : public Node
+{
+  public:
+    nodeNewexp(int col, int choice, Node *lf=0,Node *rt=0);
+
+    virtual void print(ostream *out = 0);
+};
+
+class nodeBracketExps : public Node
+{
+  public:
+    nodeBracketExps(int col, int choice, Node *lf=0,Node *rt=0);
+
+    virtual void print(ostream *out = 0);
+};
+
+class nodeBracketExp : public Node
+{
+  public:
+    nodeBracketExp(int col, int choice, Node *lf=0,Node *rt=0);
+
+    virtual void print(ostream *out = 0);
+};
+
+class nodeMultibrackets : public Node
+{
+  public:
+    nodeMultibrackets(int col, int choice, Node *lf=0,Node *rt=0);
+
     virtual void print(ostream *out = 0);
 };
 
