@@ -77,12 +77,11 @@ void yyerror(const char *);
  *(in this case) it is ever assigned a value. See the rules.
  */
 %type<ttype> exp program classDeclaration vardec type simpletype bracketexps 
-%type<ttype> bracketexp name multibrackets newexp classBody vardecs consdecs
-%type<ttype> methdecs consdec methdec parList block resType parameters exps
-%type<ttype> parameter lVarDecs statement statements conStatement opExp arglist
+bracketexp name multibrackets newexp classBody consdec methdec parList block 
+parameters exps parameter lVarDecs statement statements conStatement arglist
 %token<ttype> NUM 
 %token RPAREN LPAREN NULLT INT THIS ID DOT LBRACK RBRACK SEMI READ NEW CLASS 
-%token LBRACE RBRACE VOID COMMA PRINT WHILE RETURN IF ELSE
+%token LBRACE RBRACE VOID COMMA PRINT WHILE RETURN IF ELSE ASSIGN
 %left EQ NE GE LE GT LT
 %left PLUS MINUS OR   /* shift-reduce errors are solved by this */
 %left TIMES DIV MOD AND    /* shift-reduce errors are solved by this */
@@ -95,15 +94,15 @@ void yyerror(const char *);
  * FOLLOW THE STYLE GUIDE. You can use tabs as tabs but NOT indentation. */
 
 program:  classDeclaration {
+                          cout << "<program> -> <classDeclaration>" << endl;
                           tree=$1;
                           $$=$1;
-                          cout << "<program> -> <classDeclaration>" << endl;
                         }
       | program classDeclaration {
-                          $1->setnext($2);
-                          $$=$1;
                           cout << "<program> -> <program> <classDeclaration>";
                           cout << endl;
+                          $1->setnext($2);
+                          $$=$1;
                         }
 ;  /*trust me, don't forget the semicolon*/
 
@@ -113,388 +112,361 @@ classDeclaration: CLASS ID classBody {
                         }
 ;
 
-classBody: LBRACE vardecs consdecs methdecs RBRACE {
-                        $$ = new nodeClassBody(3, 1, $2, new Node($3, $4));
+classBody: LBRACE RBRACE {
+                        $$ = new nodeClassBody(3, 1);
+                        }
+          |LBRACE vardec consdec methdec RBRACE {
+                        $$ = new nodeClassBody(3, 2, $2, new Node($3, $4));
+                        }
+          |LBRACE vardec consdec RBRACE {
+                        $$ = new nodeClassBody(3, 3, $2, $3);
+                        }
+          |LBRACE consdec methdec RBRACE {
+                        $$ = new nodeClassBody(3, 4, $2, $3);
+                        }
+          |LBRACE vardec methdec RBRACE {
+                        $$ = new nodeClassBody(3, 5, $2, $3);
+                        }
+          |LBRACE vardec RBRACE {
+                        $$ = new nodeClassBody(3, 6, $2);
+                        }
+          |LBRACE consdec RBRACE {
+                        $$ = new nodeClassBody(3, 7, $2);
+                        }
+          |LBRACE methdec RBRACE {
+                        $$ = new nodeClassBody(3, 8, $2);
                         }
 ;
 
-vardecs:%empty          {
-                        int newCol = $$->getcol() +1;
-                        $$ = new nodeVardecs(newCol, 1);
-                        }
-        |vardecs vardec {
-                        int newCol = $$->getcol() +1;
-                        $$ = new nodeVardecs(newCol, 2, $1, $2);
-                        }
-;
 
-consdecs:%empty         {
-                        int newCol = $$->getcol() +1;
-                        $$ = new nodeConsdecs(newCol, 1);
+vardec: type ID SEMI    {
+                          $$ = new nodeVardec(4, 1, $1);
+                          $$->setval(id);
                         }
-        |consdecs consdec {
-                        int newCol = $$->getcol() +1;
-                        $$ = new nodeConsdecs(newCol, 2, $1, $2);
-                        }
-;
-
-methdecs:%empty         {
-                        int newCol = $$->getcol() +1;
-                        $$ = new nodeConsdecs(newCol, 1);
-                        }
-        |methdecs methdec {
-                        int newCol = $$->getcol() +1;
-                        $$ = new nodeConsdecs(newCol, 2, $1, $2);
-                        }
-;
-
-vardec: type ID SEMI     {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeVardec(newCol, 1, $1);
+        | vardec type ID SEMI {
+                          $$ = new nodeVardec(4, 2, $1, $2);
                           $$->setval(id);
                         }
 ;
 
 type:  simpletype	      {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeType(newCol, 1, $1);
+                          $$ = new nodeType(5, 1, $1);
                         }
       |type LBRACK RBRACK {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeType(newCol, 2, $1);
+                          $$ = new nodeType(5, 2, $1);
                         }
 ;
 
 simpletype:  INT	      {
-                          int newCol = $$->getcol() +1;
-                          $$= new nodeSimpletype(newCol, 1);
+                          $$= new nodeSimpletype(6, 1);
                         }
             | ID	      {
-                          int newCol = $$->getcol() +1;
-                          $$= new nodeSimpletype(newCol, 2);
+                          $$= new nodeSimpletype(6, 2);
                           $$->setval(id);
                         }
 ;
 
 consdec: ID LPAREN parList RPAREN block {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeConsdec(newCol, 1, $3, $5);
+                          $$ = new nodeConsdec(4, 1, $3, $5);
+                          $$->setval(id);
+                        }
+         |consdec ID LPAREN parList RPAREN block {
+                          $$ = new nodeConsdec(4, 2, $1, new Node($4, $6));
                           $$->setval(id);
                         }
 ;
 
-methdec: resType ID LPAREN parList RPAREN block {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeMethdec(newCol, 1, $1, new Node($4, $6));
+methdec: type ID LPAREN parList RPAREN block {
+                          $$ = new nodeMethdec(4, 1, $1,new Node($4, $6));
                           $$->setval(id);
                         }
+         |VOID ID LPAREN parList RPAREN block {
+                          $$ = new nodeMethdec(4, 1, $4, $6);
+                          $$->setval(id);
+                        }
+         |methdec type ID LPAREN parList RPAREN block {
+                          $$ = new nodeMethdec(4, 2, new Node ($1, $2), \
+                          new Node($5, $7));
+                          $$->setval(id);
+                        }
+         |methdec VOID ID LPAREN parList RPAREN block {
+                          $$ = new nodeMethdec(4, 2, $1, \
+                          new Node($5, $7));
+                          $$->setval(id);
+                        }
+         |type ID LPAREN error {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Expected ) or parameters." << endl;
+                          yyerrok;
+                        }
 ;
 
-resType : type          {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeRestype(newCol, 1, $1);
-                        }
-          | VOID        {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeRestype(newCol, 2);
-                        }
-;
-
-parList :%empty         {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeParlist(newCol, 1);
-                        }
+parList :%empty         
          | parameters   {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeParlist(newCol, 2, $1);
+                          $$ = new nodeParlist(5, 2, $1);
                         }
 ;
 
 parameters: parameter   {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeParameters(newCol, 1, $1);
+                          $$ = new nodeParameters(6, 1, $1);
                         }
             | parameters COMMA parameter {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeParameters(newCol, 2, $1, $3);
+                          $$ = new nodeParameters(6, 2, $1, $3);
                         }
 ;
 
 parameter: type ID      {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeParameter(newCol, 1, $1);
+                          $$ = new nodeParameter(7, 1, $1);
                           $$->setval(id);
                         }
 ;
 
 block : LBRACE lVarDecs statements RBRACE {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeBlock(newCol, 1, $2, $3);
+                          $$ = new nodeBlock(5, 1, $2, $3);
                         }
-;
-
-lVarDecs:%empty         {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeLVarDecs(newCol, 1);
+        |LBRACE lVarDecs RBRACE {
+                          $$ = new nodeBlock(5, 2, $2);
                         }
-        | lVarDecs type ID SEMI  {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeLVarDecs(newCol, 2, $1, $2);
-                          $$->setval(id);
+        |LBRACE statements RBRACE {
+                          $$ = new nodeBlock(5, 3, $2);
                         }
-;
-
-statements:%empty       {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatements(newCol, 1);
+        |LBRACE RBRACE  {
+                          $$ = new nodeBlock(5, 4);
                         }
-            |statements statement {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatements(newCol, 2, $1, $2);
-                        }
-
-statement: SEMI         {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatement(newCol, 1);
-                        }
-            | name EQ exp SEMI {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatement(newCol, 2, $1,$3);
-                        }
-            | name LPAREN arglist RPAREN SEMI {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatement(newCol, 3, $1, $3);
-                        }
-            | PRINT LPAREN arglist RPAREN SEMI {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatement(newCol, 4, $3);
-                        }
-            | conStatement {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatement(newCol, 5, $1);
-                        }
-            | WHILE LPAREN exp RPAREN statement {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatement(newCol, 6, $3, $5);
-                        }
-            | RETURN opExp SEMI {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatement(newCol, 7, $2);
-                        }
-            | block     {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeStatement(newCol, 8, $1);
-                        }
-;
-
-name:   THIS            {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeName(newCol, 1);
-                        }
-        |ID             {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeName(newCol, 2);
-                          $$->setval(id);
-                        }
-        |name DOT ID    {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeName(newCol, 3, $1);
-                          $$->setval(id);
-                        }
-        |name bracketexp {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeName(newCol, 4, $1, $2);
-                        }
-;
-
-arglist:%empty          {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeArglist(newCol, 1);
-                        }
-        | exps          {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeArglist(newCol, 2, $1);
-                        }
-;
-
-conStatement: IF LPAREN exp RPAREN statement {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeConStatement(newCol, 1, $3, $5);
-                        }
-              | IF LPAREN exp RPAREN statement ELSE statement{
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeConStatement(newCol, 2, $3, \
-                          new Node($5, $7));
-                        }
-;
-
-opExp:%empty            {
-                          int newCol = $$->getcol() +1;
-                        $$ = new nodeOpExp(newCol, 1);
-                        }
-      | exp             {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeOpExp(newCol, 2, $1);
-                        }
-;
-
-exps: exp               {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeExps(newCol, 1, $1);
-                        }
-      | exp COMMA exps  {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeExps(newCol, 2, $1,$3);
-                        } 
-;
-
-exp:   name             {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeExp(newCol, 1, $1);
-                        }
-       |NUM             { 
-                          int newCol = $$->getcol() +1;      
-                          $$=new nodeExp(newCol, 2);
-                          $$->setval($1->getint());
-                        }
-       | NULLT          { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 3);
-                        }
-       |name LPAREN arglist RPAREN {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeExp(newCol, 4, $1, $3);
-                        }
-       |READ LPAREN RPAREN {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeExp(newCol, 5);
-                        }
-       |newexp          {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeExp(newCol, 6, $1);
-                        }
-       | exp PLUS exp   { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 7, $1,$3);
-                        }
-       | exp MINUS exp  { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 8, $1,$3);
-                        }
-       | exp OR exp     { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 9, $1,$3);
-                        }
-       | exp TIMES exp  { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 10, $1,$3);
-                        }
-       | exp DIV exp    {
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 11, $1,$3);
-                        }
-       | exp MOD exp    {
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 12, $1,$3);
-                        }
-       | exp AND exp    {
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 13, $1,$3);
-                        }
-       | exp EQ exp     {
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 14, $1,$3);
-                        }
-       | exp NE exp     {
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 15, $1,$3);
-                        }
-       | exp GE exp     {
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 16, $1,$3);
-                        }
-       | exp LE exp     { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 17, $1,$3);
-                        }
-       | exp GT exp     {
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 18, $1,$3);
-                        }
-       | exp LT exp     { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 19, $1,$3);
-                        }
-       | MINUS exp  %prec NEG { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 20, $2);
-                        }
-       | PLUS exp  %prec UPLUS { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 21, $2);
-                        }
-       | LPAREN exp RPAREN    { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 22, $2);
-                        }
-       | NOT exp        { 
-                          int newCol = $$->getcol() +1;
-                          $$=new nodeExp(newCol, 23, $2);
-                        }
-;
-
-newexp: NEW ID LPAREN arglist RPAREN {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeNewexp(newCol, 1, $4); 
-                          $$->setval(id);
-                        }
-        |NEW simpletype {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeNewexp(newCol, 2, $2); 
-                        }
-        |NEW simpletype bracketexps {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeNewexp(newCol, 3, $2,$3); 
-                        }
-        |NEW simpletype multibrackets {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeNewexp(newCol, 4, $3); 
-                        }
-        |NEW simpletype bracketexps multibrackets {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeNewexp(newCol, 5, $2, new Node($3,$4)); 
-                        }
-      | NEW error       {
+        |LBRACE statements error {
                           cout << scanner.lineno() << ":" << firstColumn;
                           cout << ":: "; //<<contents of line << endl;
-                          cout << "Error in new expression" << endl;
+                          cout << "Error. Expected }" << endl;
                           yyerrok;
                         }
 ;
 
+lVarDecs: type ID SEMI  {
+                          $$ = new nodeLVarDecs(6, 1, $1);
+                        }         
+        | lVarDecs type ID SEMI  {
+                          $$ = new nodeLVarDecs(6, 2, $1, $2);
+                          $$->setval(id);
+                        }
+        | type ID error {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Suspect missing semicolon." << endl;
+                          yyerrok;
+                        }
+;
+
+statements: statement   {
+                          $$ = new nodeStatements(6, 1, $1);
+                        }       
+            |statements statement {
+                          $$ = new nodeStatements(6, 2, $1, $2);
+                        }
+;
+
+statement: SEMI         {
+                          $$ = new nodeStatement(7, 1);
+                        }
+            | name ASSIGN exp SEMI {
+                          $$ = new nodeStatement(7, 2, $1,$3);
+                        }
+            | ID ASSIGN exp SEMI {
+                          $$ = new nodeStatement(7, 3, $3);
+                          $$->setval(id);
+                        }
+            | name LPAREN arglist RPAREN SEMI {
+                          $$ = new nodeStatement(7, 4, $1, $3);
+                        }
+            | ID LPAREN arglist RPAREN SEMI {
+                          $$ = new nodeStatement(7, 5, $3);
+                          $$->setval(id);
+                        }
+            | PRINT LPAREN arglist RPAREN SEMI {
+                          $$ = new nodeStatement(7, 6, $3);
+                        }
+            | conStatement {
+                          $$ = new nodeStatement(7, 7, $1);
+                        }
+            | WHILE LPAREN exp RPAREN statement {
+                          $$ = new nodeStatement(7, 8, $3, $5);
+                        }
+            | RETURN SEMI {
+                          $$ = new nodeStatement(7, 9);
+                        }
+            | RETURN exp SEMI {
+                          $$ = new nodeStatement(7, 10, $2);
+                        }
+            | block     {
+                          $$ = new nodeStatement(7, 11, $1);
+                        }
+            | ID ASSIGN exp error {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Expected ;" << endl;
+                          yyerrok;
+                        }
+;
+
+name:   THIS            {
+                          $$ = new nodeName(8, 1);
+                        }
+        |ID             {
+                          $$ = new nodeName(8, 2);
+                          $$->setval(id);
+                        }
+        |name DOT ID    {
+                          $$ = new nodeName(8, 3);
+                          $$->setval(id);
+                        }
+        |ID DOT ID      {
+                          $$ = new nodeName(8, 4);
+                          $$->setval(id);
+                          $$->setid(prevId);
+                        }
+        |name bracketexp {
+                          $$ = new nodeName(8, 5, $1, $2);
+                        }
+      | name error ID   {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Perhaps you meant period?" << endl;
+                          yyerrok;
+                        }
+;
+
+arglist:%empty          
+        | exps          {
+                          $$ = new nodeArglist(8, 2, $1);
+                        }
+;
+
+conStatement: IF LPAREN exp RPAREN statement {
+                          $$ = new nodeConStatement(8, 1, $3, $5);
+                        }
+              | IF LPAREN exp RPAREN statement ELSE statement{
+                          $$ = new nodeConStatement(8, 2, $3, \
+                          new Node($5, $7));
+                        }
+;
+
+
+exps: exp               {
+                          $$ = new nodeExps(9, 1, $1);
+                        }
+      | exp COMMA exps  {
+                          $$ = new nodeExps(9, 2, $1,$3);
+                        } 
+;
+
+exp:   name             {
+                          $$ = new nodeExp(10, 1, $1);
+                        } 
+       |NUM             {       
+                          $$=new nodeExp(10, 2);
+                          $$->setval($1->getint());
+                        }
+       | NULLT          { 
+                          $$=new nodeExp(10, 3);
+                        }
+       |name LPAREN arglist RPAREN {
+                          $$ = new nodeExp(10, 4, $1, $3);
+                        }
+       |READ LPAREN RPAREN {
+                          $$ = new nodeExp(10, 5);
+                        }
+       |newexp          {
+                          $$ = new nodeExp(10, 6, $1);
+                        }
+       | exp PLUS exp   { 
+                          $$=new nodeExp(10, 7, $1,$3);
+                        }
+       | exp MINUS exp  { 
+                          $$=new nodeExp(10, 8, $1,$3);
+                        }
+       | exp OR exp     { 
+                          $$=new nodeExp(10, 9, $1,$3);
+                        }
+       | exp TIMES exp  { 
+                          $$=new nodeExp(10, 10, $1,$3);
+                        }
+       | exp DIV exp    {
+                          $$=new nodeExp(10, 11, $1,$3);
+                        }
+       | exp MOD exp    {
+                          $$=new nodeExp(10, 12, $1,$3);
+                        }
+       | exp AND exp    {
+                          $$=new nodeExp(10, 13, $1,$3);
+                        }
+       | exp EQ exp     {
+                          $$=new nodeExp(10, 14, $1,$3);
+                        }
+       | exp NE exp     {
+                          $$=new nodeExp(10, 15, $1,$3);
+                        }
+       | exp GE exp     {
+                          $$=new nodeExp(10, 16, $1,$3);
+                        }
+       | exp LE exp     { 
+                          $$=new nodeExp(10, 17, $1,$3);
+                        }
+       | exp GT exp     {
+                          $$=new nodeExp(10, 18, $1,$3);
+                        }
+       | exp LT exp     { 
+                          $$=new nodeExp(10, 19, $1,$3);
+                        }
+       | MINUS exp  %prec NEG { 
+                          $$=new nodeExp(10, 20, $2);
+                        }
+       | PLUS exp  %prec UPLUS { 
+                          $$=new nodeExp(10, 21, $2);
+                        }
+       | LPAREN exp RPAREN    { 
+                          $$=new nodeExp(10, 22, $2);
+                        }
+       | NOT exp        { 
+                          $$=new nodeExp(10, 23, $2);
+                        }
+;
+
+newexp: NEW ID LPAREN arglist RPAREN {
+                          $$ = new nodeNewexp(11, 1, $4); 
+                          $$->setval(id);
+                        }
+        |NEW simpletype {
+                          $$ = new nodeNewexp(11, 2, $2); 
+                        }
+        |NEW simpletype bracketexps {
+                          $$ = new nodeNewexp(11, 3, $2,$3); 
+                        }
+        |NEW simpletype multibrackets {
+                          $$ = new nodeNewexp(11, 4, $3); 
+                        }
+        |NEW simpletype bracketexps multibrackets {
+                          $$ = new nodeNewexp(11, 5, $2, new Node($3,$4)); 
+                        }
+;
+
 bracketexps:  bracketexp {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeBracketExps(newCol, 1, $1);
+                          $$ = new nodeBracketExps(12, 1, $1);
                         }
               |bracketexps bracketexp {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeBracketExps(newCol, 2, $1,$2);
+                          $$ = new nodeBracketExps(12, 2, $1,$2);
                         }
 ;
 
 bracketexp: LBRACK exp RBRACK {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeBracketExp(newCol, 1, $2);
+                          $$ = new nodeBracketExp(13, 1, $2);
                         }
 ;
 
 multibrackets: LBRACK RBRACK {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeMultibrackets(newCol, 1);
+                          $$ = new nodeMultibrackets(12, 1);
                         }
                |multibrackets LBRACK RBRACK {
-                          int newCol = $$->getcol() +1;
-                          $$ = new nodeMultibrackets(newCol, 2, $1);
+                          $$ = new nodeMultibrackets(12, 2, $1);
                         }
 ;
 

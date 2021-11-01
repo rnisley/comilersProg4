@@ -77,30 +77,6 @@ class nodeClassBody : public Node
     virtual void print(ostream *out = 0);
 };
 
-class nodeVardecs : public Node
-{
-  public:
-    nodeVardecs(int col, int choice, Node *lf=0,Node *rt=0);
-
-    virtual void print(ostream *out = 0);
-};
-
-class nodeConsdecs : public Node
-{
-  public:
-    nodeConsdecs(int col, int choice, Node *lf=0,Node *rt=0);
-
-    virtual void print(ostream *out = 0);
-};
-
-class nodeMethdecs : public Node
-{
-  public:
-    nodeMethdecs(int col, int choice, Node *lf=0,Node *rt=0);
-
-    virtual void print(ostream *out = 0);
-};
-
 class nodeVardec : public Node
 {
   public:
@@ -225,14 +201,6 @@ class nodeConStatement : public Node
 {
   public:
     nodeConStatement(int col, int choice, Node *lf=0,Node *rt=0);
-
-    virtual void print(ostream *out = 0);
-};
-
-class nodeOpExp : public Node
-{
-  public:
-    nodeOpExp(int col, int choice, Node *lf=0,Node *rt=0);
 
     virtual void print(ostream *out = 0);
 };
