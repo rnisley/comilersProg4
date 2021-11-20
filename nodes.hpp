@@ -253,4 +253,12 @@ class nodeMultibrackets : public Node
     virtual void print(ostream *out = 0);
 };
 
+class nodeID : public Node
+{
+  public:
+    nodeID(string ID);
+
+    virtual void print(ostream *out = 0);
+};
+
 #endif

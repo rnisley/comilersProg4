@@ -1,5 +1,5 @@
 /*
- * nodes.ypp
+ * nodes.cpp
  * COSC4785
  * Ric Nisley
  * 10/9/2021
@@ -127,12 +127,7 @@ void nodeClassDec::print(ostream *out)
   {
     *out << "  ";
   }
-  *out << "<classDeclaration> -> CLASS ID <classBody>" << endl;
-  for (int i = 0; i < mycol; i++)
-  {
-    *out << "  ";
-  }
-  *out << "ID -> " << sval << endl;
+  *out << "<classDeclaration> -> CLASS <ident> <classBody>" << endl;
 
   if(left) {
     left->print(out);
@@ -221,10 +216,10 @@ void nodeVardec::print(ostream *out)
   switch (choice)
   {
   case 1:
-    *out << "<vardec> -> <type> ID ;" << endl;
+    *out << "<vardec> -> <type> <ident> ;" << endl;
     break;
   case 2:
-    *out << "<vardec> -> <vardec> <type> ID ;" << endl;
+    *out << "<vardec> -> <vardec> <type> <ident> ;" << endl;
     break;
     
   default:
@@ -237,12 +232,6 @@ void nodeVardec::print(ostream *out)
   if(right) {
     right->print(out);
   }
-
-  for (int i = 0; i < mycol; i++)
-  {
-    *out << "  ";
-  }
-  *out << "ID -> " << sval << endl;
 
   if(next) {
     *out << endl;
@@ -311,12 +300,7 @@ void nodeSimpletype::print(ostream *out)
     *out << "<simpletype> -> INT" << endl;
     break;
   case 2:
-    *out << "<simpletype> -> ID" << endl;
-    for (int i = 0; i < mycol; i++)
-    {
-      *out << "  ";
-    }
-    *out << "ID -> " << ival;
+    *out << "<simpletype> -> <ident>" << endl;
     break;
   
   default:
@@ -353,33 +337,20 @@ void nodeConsdec::print(ostream *out)
   switch (choice)
   {
   case 1:
-    *out << "<consdec> -> ID ( <parlist> ) <block>" << endl;
+    *out << "<consdec> -> <ident> ( <parlist> ) <block>" << endl;
   for (int i = 0; i < mycol; i++)
-  {
-    *out << "  ";
-  }
-  *out << "ID -> " << sval << endl;
-
-  if(left) {
-    left->print(out);
-  }
     break;
   case 2:
-    *out << "<consdec> -> <consdec> ID ( <parlist> ) <block>" << endl;
-    if(left) {
-      left->print(out);
-    }
-    for (int i = 0; i < mycol; i++)
-    {
-      *out << "  ";
-    }
-    *out << "ID -> " << sval << endl;
+    *out << "<consdec> -> <consdec> <ident> ( <parlist> ) <block>" << endl;
     break;
   
   default:
     break;
   }
-  
+
+  if(left) {
+    left->print(out);
+  }
   if(right) {
     right->print(out);
   }
@@ -407,10 +378,10 @@ void nodeMethdec::print(ostream *out)
   switch (choice)
   {
   case 1:
-    *out << "<methdec> -> <resType> ID ( <parList> ) <block>" << endl;
+    *out << "<methdec> -> <resType> <ident> ( <parList> ) <block>" << endl;
     break;
   case 2:
-    *out << "<methdec> -> <methdec> <resType> ID ( <parList> ) <block>" << endl;
+    *out << "<methdec> -> <methdec> <resType> <ident> ( <parList> ) <block>" << endl;
     break;
   
   default:
@@ -420,13 +391,6 @@ void nodeMethdec::print(ostream *out)
   if(left) {
     left->print(out);
   }
-
-  for (int i = 0; i < mycol; i++)
-  {
-    *out << "  ";
-  }
-  *out << "ID -> " << sval << endl;
-
   if(right) {
     right->print(out);
   }
@@ -568,13 +532,7 @@ void nodeParameter::print(ostream *out)
   {
     *out << "  ";
   }
-  *out << "<parameter> -> <type> ID" << endl;
-  
-  for (int i = 0; i < mycol; i++)
-  {
-    *out << "  ";
-  }
-  *out << "ID -> " << sval << endl;
+  *out << "<parameter> -> <type> <ident>" << endl;
 
   if(left) {
     left->print(out);
@@ -652,10 +610,10 @@ void nodeLVarDecs::print(ostream *out)
   switch (choice)
   {
   case 1:
-    *out << "<lVarDecs> -> <type> ID ;" << endl;
+    *out << "<lVarDecs> -> <type> <ident> ;" << endl;
     break;
   case 2:
-    *out << "<lVarDecs> -> <lVarDecs> <type> ID ;" << endl;
+    *out << "<lVarDecs> -> <lVarDecs> <type> <ident> ;" << endl;
     break;
   default:
     break;
@@ -666,11 +624,6 @@ void nodeLVarDecs::print(ostream *out)
   if(right) {
     right->print(out);
   }
-  for (int i = 0; i < mycol; i++)
-  {
-    *out << "  ";
-  }
-  *out << "ID -> " << sval << endl;
   if(next) {
     *out << endl;
     next->print(out);
@@ -740,23 +693,13 @@ void nodeStatement::print(ostream *out)
     *out << "<statement> -> <name> = <exp> ;" << endl;
     break;
   case 3:
-    *out << "<statement> -> ID = <exp> ;" << endl;
-    for (int i = 0; i < mycol; i++)
-    {
-      *out << "  ";
-    }
-    *out << "ID -> " << sval;
+    *out << "<statement> -> <ident> = <exp> ;" << endl;
     break;
   case 4:
     *out << "<statement> -> <name> ( <arglist> ) ;" << endl;
     break;
   case 5:
-    *out << "<statement> -> ID ( <arglist> ) ;" << endl;
-    for (int i = 0; i < mycol; i++)
-    {
-      *out << "  ";
-    }
-    *out << "ID -> " << sval;
+    *out << "<statement> -> <ident> ( <arglist> ) ;" << endl;
     break;
   case 6:
     *out << "<statement> -> PRINT ( <arglist> ) ;" << endl;
@@ -811,73 +754,29 @@ void nodeName::print(ostream *out)
   {
   case 1:
     *out << "<name> -> THIS" << endl;
-    if(left) {
-      left->print(out);
-    }
-    if(right) {
-      right->print(out);
-    }
     break;
   case 2:
-    *out << "<name> -> ID" << endl;
-    for (int i = 0; i < mycol; i++)
-    {
-      *out << "  ";
-    }
-    *out << "ID -> " << sval << endl;
-    if(left) {
-      left->print(out);
-    }
-    if(right) {
-      right->print(out);
-    }
+    *out << "<name> -> <ident>" << endl;
     break;
   case 3:
-    *out << "<name> -> THIS . ID ;" << endl;
-    if(left) {
-      left->print(out);
-    }
-    if(right) {
-      right->print(out);
-    }
-    for (int i = 0; i < mycol; i++)
-    {
-      *out << "  ";
-    }
-    *out << "ID -> " << sval << endl;
+    *out << "<name> -> THIS . <ident> ;" << endl;
     break;
   case 4:
-    *out << "<name> -> ID . ID ;" << endl;
-    if(left) {
-      left->print(out);
-    }
-    if(right) {
-      right->print(out);
-    }
-    for (int i = 0; i < mycol; i++)
-    {
-      *out << "  ";
-    }
-    *out << "ID -> " << firstid << endl;
-    for (int i = 0; i < mycol; i++)
-    {
-      *out << "  ";
-    }
-    *out << "ID -> " << sval << endl;
+    *out << "<name> -> <ident> . <ident> ;" << endl;
     break;
   case 5:
     *out << "<name> -> <name> <bracketexp>" << endl;
-    if(left) {
-      left->print(out);
-    }
-    if(right) {
-      right->print(out);
-    }
     break;
   default:
     break;
   }
 
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
   if(next) {
     *out << endl;
     next->print(out);
@@ -1254,6 +1153,34 @@ void nodeMultibrackets::print(ostream *out)
   default:
     break;
   }
+  
+  if(left) {
+    left->print(out);
+  }
+  if(right) {
+    right->print(out);
+  }
+  if(next) {
+    *out << endl;
+    next->print(out);
+  }
+  return;
+}
+
+
+nodeID::nodeID(string ID)
+{
+  sval = ID;
+}
+
+void nodeID::print(ostream *out)
+{
+  for (int i = 1; i < mycol; i++)
+  {
+    *out << "  ";
+  }
+  *out << "<ident> -> ID" << endl;
+  *out << "ID -> " << sval << endl;
   
   if(left) {
     left->print(out);

@@ -1,0 +1,48 @@
+/*
+ * This defines the "symbol table" class in C++. 
+ *
+ * symbolTable.hpp
+ * COSC4785
+ * Ric Nisley
+ * 11/13/2021
+ *
+ */
+
+#ifndef SYMBOLTABLE_HPP
+#define SYMBOLTABLE_HPP
+
+#include <unordered_map>
+#include <string>
+using namespace std;
+
+class Entry;
+
+class SymbolTable
+{
+    public:
+    SymbolTable(SymbolTable *parent = nullptr);
+    ~SymbolTable();
+
+    SymbolTable* getParent();
+    string lookup(string id);
+    int insert(string type, Entry *id);
+    void print();
+
+    private:
+    unordered_map<string, Entry*> table;
+    SymbolTable *myParent;
+};
+
+class Entry
+{
+    public:
+    Entry(string ident, string type, SymbolTable* typeST = nullptr, int isP = 0);
+    ~Entry();
+
+    string id;
+    string myType;
+    SymbolTable * myTypeST;
+    int isParameter;
+    
+};
+#endif
