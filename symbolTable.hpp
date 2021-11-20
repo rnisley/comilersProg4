@@ -36,12 +36,13 @@ class SymbolTable
 class Entry
 {
     public:
-    Entry(string ident, string type, SymbolTable* typeST = nullptr, int isP = 0);
+    Entry(string ident, string type, SymbolTable* typeST = nullptr, string ps = "", int isP = 0);
     ~Entry();
 
     string id;
     string myType;
     SymbolTable * myTypeST;
+    string printerStuff;
     int isParameter;
     
 };

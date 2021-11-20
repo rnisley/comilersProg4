@@ -46,7 +46,7 @@ int main()
     yyparse();
 
     cout << endl << endl;
-    myTypeTable.print();
+    //myTypeTable.print();
     cout << endl;
   
 

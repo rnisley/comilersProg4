@@ -18,33 +18,36 @@ TypeTable::~TypeTable(){};
 
 int TypeTable::insert(string type, SymbolTable *pointer)
 {
-    if(table.find(type) == table.end())
-    {
-      table.insert({type, pointer});
-      return 0;
-    }
-    else
-    {
-      return -1;
-    }
+  if (table.find(type) == table.end())
+  {
+    table.insert({type, pointer});
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
 }
 
-SymbolTable* TypeTable::lookup (string type)
+SymbolTable *TypeTable::lookup(string type)
 {
-    if(table.find(type) == table.end())
-    {
-        return nullptr;
-    }
-    else
-    {
-        return table[type];
-    }
+  if (table.find(type) == table.end())
+  {
+    return nullptr;
+  }
+  else
+  {
+    return table[type];
+  }
 }
 
 void TypeTable::print()
 {
-  for(auto st : table)
+  for (auto st : table)
   {
-    st.second->print();
+    if (st.second != nullptr)
+    {
+      st.second->print();
+    }
   }
 }

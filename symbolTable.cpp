@@ -79,15 +79,26 @@ void SymbolTable::print()
     {
         string id = symbol.first;
         string type = symbol.second->myType;
-        cout << id << " " << type << endl;
+        string ps = symbol.second->printerStuff;
+        if(id != "")
+        {
+            cout << id << " " ;
+        }
+        cout << type << " ";
+        if(ps != "")
+        {
+          cout << ps;
+        }
+        cout << endl;
     }
 }
 
-Entry::Entry(string ident, string type, SymbolTable* typeST, int isP)
+Entry::Entry(string ident, string type, SymbolTable* typeST, string ps, int isP)
 {
     id = ident;
     myType = type;
     myTypeST = typeST;
+    printerStuff = ps;
     isParameter = isP;
 };
 
