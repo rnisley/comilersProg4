@@ -68,32 +68,48 @@ string SymbolTable::lookup(string id)
     }
 }
 
-SymbolTable* SymbolTable::getParent()
+SymbolTable *SymbolTable::getParent()
 {
     return myParent;
 }
 
-void SymbolTable::print()
+void Entry::print(int spacing)
 {
-    for(auto symbol : table)
+    if(id[0] != '@')
     {
-        string id = symbol.first;
-        string type = symbol.second->myType;
-        string ps = symbol.second->printerStuff;
-        if(id != "")
+        for (int i = 0; i < spacing; i++)
         {
-            cout << id << " " ;
+            cout << "  ";
         }
-        cout << type << " ";
-        if(ps != "")
+        if (id != "")
         {
-          cout << ps;
+            cout << id << " ";
+        }
+        cout << myType << " ";
+        if (printerStuff != "")
+        {
+            cout << printerStuff << " <-";
+            if (myTypeST->paramList != "")
+            {
+                cout << myTypeST->paramList;
+            }
+            else
+            {
+                cout << " void";
+            }
         }
         cout << endl;
     }
+    if (myTypeST != nullptr)
+    {
+        for (auto symbol : myTypeST->table)
+        {
+            symbol.second->print(spacing + 1);
+        }
+    }
 }
 
-Entry::Entry(string ident, string type, SymbolTable* typeST, string ps, int isP)
+Entry::Entry(string ident, string type, SymbolTable *typeST, string ps, int isP)
 {
     id = ident;
     myType = type;

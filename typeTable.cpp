@@ -7,6 +7,7 @@
  */
 
 #include "typeTable.hpp"
+#include <iostream>
 
 TypeTable::TypeTable()
 {
@@ -16,7 +17,7 @@ TypeTable::TypeTable()
 
 TypeTable::~TypeTable(){};
 
-int TypeTable::insert(string type, SymbolTable *pointer)
+int TypeTable::insert(string type, Entry *pointer)
 {
   if (table.find(type) == table.end())
   {
@@ -29,7 +30,7 @@ int TypeTable::insert(string type, SymbolTable *pointer)
   }
 }
 
-SymbolTable *TypeTable::lookup(string type)
+Entry *TypeTable::lookup(string type)
 {
   if (table.find(type) == table.end())
   {
@@ -47,7 +48,8 @@ void TypeTable::print()
   {
     if (st.second != nullptr)
     {
-      st.second->print();
+      
+      st.second->print(0);
     }
   }
 }

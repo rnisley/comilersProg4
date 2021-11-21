@@ -21,11 +21,11 @@ class TypeTable
     public:
     TypeTable();
     ~TypeTable();
-    SymbolTable* lookup(string type);
-    int insert(string type, SymbolTable *pointer = nullptr);
+    Entry* lookup(string type);
+    int insert(string type, Entry *pointer = nullptr);
     void print();
 
     private:
-    unordered_map<string, SymbolTable*> table;
+    unordered_map<string, Entry*> table;
 };
 #endif

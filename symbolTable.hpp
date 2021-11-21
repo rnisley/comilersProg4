@@ -26,10 +26,11 @@ class SymbolTable
     SymbolTable* getParent();
     string lookup(string id);
     int insert(string type, Entry *id);
-    void print();
 
-    private:
+    string paramList = "";
     unordered_map<string, Entry*> table;
+    
+    private:
     SymbolTable *myParent;
 };
 
@@ -39,6 +40,7 @@ class Entry
     Entry(string ident, string type, SymbolTable* typeST = nullptr, string ps = "", int isP = 0);
     ~Entry();
 
+    void print(int spacing);
     string id;
     string myType;
     SymbolTable * myTypeST;

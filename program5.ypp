@@ -38,6 +38,9 @@ extern int firstColumn;
 TypeTable myTypeTable;
 SymbolTable *global = new SymbolTable();
 SymbolTable *current = global;
+int blkNum = 0;
+int parNum = 1;
+Entry * curEnt = new Entry("global", "global");
 /* 
  * Need to do this define, an "acceptable" hack to interface
  * the C++ scanner with the C parser. 
@@ -77,10 +80,10 @@ void yyerror(const char *);
  * The "exp" is only used here in this file but must be given a type if 
  *(in this case) it is ever assigned a value. See the rules.
  */
-%type<ttype> exp program classDeclaration vardec bracketexps 
+%type<ttype> exp program classDeclaration vardec bracketexps blockHead subblock
 bracketexp name multibrackets newexp classBody consdec methdec parList block 
 parameters exps parameter lVarDecs statement statements conStatement arglist
-ident classHead consHead methHead
+ident classHead consHead methHead ebracketexps ebracketexp emultibrackets
 %token<ttype> NUM 
 %token RPAREN LPAREN NULLT INT THIS ID DOT LBRACK RBRACK SEMI READ NEW CLASS 
 %token LBRACE RBRACE VOID COMMA PRINT WHILE RETURN IF ELSE ASSIGN
@@ -107,14 +110,18 @@ program:  classDeclaration {
 
 classDeclaration: classHead classBody {
                         $$ = new nodeClassDec(2, 1, $1, $2);
-                        //current = classTable->getParent();
+                        current = current->getParent();
                         }
 ;
 
 classHead: CLASS ident  {
-                          //SymbolTable* classTable = new SymbolTable(current);
-                          //current = classTable;
-                          //myTypeTable.insert($2->getstring(), current);
+                          SymbolTable* classTable = new SymbolTable(current);
+                          Entry * myEntry = new Entry("",$2->getstring(), \
+                          classTable, "class_type");
+                          current->insert($2->getstring(), myEntry);
+                          current = classTable;
+                          curEnt = myEntry;
+                          myTypeTable.insert($2->getstring(), myEntry);
                           $$ = new Node($2);
                         }
 ;
@@ -147,89 +154,91 @@ classBody: LBRACE RBRACE {
 
 
 vardec: INT ident SEMI {
-                          //string myID = $2->getstring();
-                          //Entry * var = new Entry(myID, "int");
-                          //current->insert(myID, var);
+                          Entry * myEntry = new Entry($2->getstring(), "int");
+                          current->insert($2->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $2);
                         }
         | ident ident SEMI {
-                          //string myType = $1->getstring();
-                          //string myID = $2->getstring();
-                          //Entry * var = new Entry(myID, \
-                          //myType, myTypeTable.lookup(myType));
-                          //current->insert($2->getstring(), var);
+                          Entry * myEntry = new Entry($2->getstring(), \
+                          $1->getstring());
+                          current->insert($2->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $1, $2);
                         }
         | vardec INT ident SEMI {
-                          //string myID = $3->getstring();
-                          //Entry * var = new Entry(myID, "int");
-                          //current->insert(myID, var);
+                          Entry * myEntry = new Entry($3->getstring(), "int");
+                          current->insert($3->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, $3);
                         }
         | vardec ident ident SEMI {
-                          //string myType = $2->getstring();
-                          //string myID = $3->getstring();
-                          //Entry * var = new Entry(myID, \
-                          //myType, myTypeTable.lookup(myType));
-                          //current->insert($3->getstring(), var);
+                          Entry * myEntry = new Entry($3->getstring(), \
+                          $2->getstring());
+                          current->insert($3->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, new Node ($2, $3));
                         }
         | INT bracketexps ident SEMI {
-                          //string myID = $2->getstring();
-                          //Entry * var = new Entry(myID, "int");
-                          //current->insert(myID, var);
+                          Entry * myEntry = new Entry($3->getstring(), "int");
+                          current->insert($3->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $2, $3);
                         }
         | ident bracketexps ident SEMI {
-                          //string myType = $1->getstring();
-                          //string myID = $2->getstring();
-                          //Entry * var = new Entry(myID, \
-                          //myType, myTypeTable.lookup(myType));
-                          //current->insert($2->getstring(), var);
+                          Entry * myEntry = new Entry($3->getstring(), \
+                          $2->getstring());
+                          current->insert($3->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $1, new Node($2, $3));
                         }
         | vardec  INT bracketexps ident SEMI {
-                          //string myID = $3->getstring();
-                          //Entry * var = new Entry(myID, "int");
-                          //current->insert(myID, var);
+                          Entry * myEntry = new Entry($4->getstring(), "int");
+                          current->insert($4->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, new Node($3, $4));
                         }
         | vardec  ident bracketexps ident SEMI {
-                          //string myType = $2->getstring();
-                          //string myID = $3->getstring();
-                          //Entry * var = new Entry(myID, \
-                          //myType, myTypeTable.lookup(myType));
-                          //current->insert($3->getstring(), var);
+                          Entry * myEntry = new Entry($4->getstring(), \
+                          $2->getstring());
+                          current->insert($4->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, new Node($1, $2), new Node ($3, $4));
                         }
 ;
 
 consdec: consHead parList RPAREN block {
                           $$ = new nodeConsdec(4, 1, $1, new Node($2, $4));
-                          //current = classTable->getParent();
+                          current = current->getParent();
+                          parNum = 1;
                         }
          |consdec consHead parList RPAREN block {
                          $$ = new nodeConsdec(4, 2, new Node($1, $2), new Node\
                           ($3, $5));
-                          //current = classTable->getParent();
+                          current = current->getParent();
+                          parNum = 1;
                         }
 ;
 
 consHead : ident LPAREN {
-                          //insert ID into symbol table. type is class ID
-                          //SymbolTable* classTable = new SymbolTable(current);
-                          //current = classTable;
+                          SymbolTable* classTable = new SymbolTable(current);
+                          Entry * myEntry = new Entry("",$1->getstring(), \
+                          classTable, "constructor_type");
+                          current->insert($1->getstring(), myEntry);
+                          current = classTable;
                           $$ = new Node($1);
                         }
 
 methdec: methHead parList RPAREN block {
                           $$ = new nodeMethdec(4, 1, $1, new Node($2, $4));
-                          //current = classTable->getParent();
+                          current = current->getParent();
+                          parNum = 1;
                         }
          |methdec methHead parList RPAREN block {
                           $$ = new nodeMethdec(4, 2, new Node($1, $2)\
                           , new Node($3, $5));
-                          //current = classTable->getParent();
+                          current = current->getParent();
+                          parNum = 1;
                         }
          |methHead error {
                           cout << scanner.lineno() << ":" << firstColumn;
@@ -240,21 +249,30 @@ methdec: methHead parList RPAREN block {
 ;
 
 methHead : INT ident LPAREN {
-                          //insert ID into symbol table. type is $2
-                          //SymbolTable* classTable = new SymbolTable(current);
-                          //current = classTable;
+                              SymbolTable* classTable = new SymbolTable\
+                              (current);
+                              Entry * myEntry = new Entry($2-> getstring(),\
+                              "int", classTable, "method_type");
+                              current->insert($2->getstring(), myEntry);
+                              current = classTable;
                               $$ = new Node($2);
                             }
           | VOID ident LPAREN {
-                          //insert ID into symbol table. type is $2
-                          //SymbolTable* classTable = new SymbolTable(current);
-                          //current = classTable;
+                              SymbolTable* classTable = new SymbolTable\
+                              (current);
+                              Entry * myEntry = new Entry($2-> getstring(),\
+                              "void", classTable, "method_type");
+                              current->insert($2->getstring(), myEntry);
+                              current = classTable;
                               $$ = new Node($2);
                             }
           | ident ident LPAREN {
-                          //insert ID into symbol table. type is $2
-                          //SymbolTable* classTable = new SymbolTable(current);
-                          //current = classTable;
+                              SymbolTable* classTable = new SymbolTable\
+                              (current);
+                              Entry * myEntry = new Entry($2-> getstring(),\
+                              $1->getstring(), classTable, "method_type");
+                              current->insert($2->getstring(), myEntry);
+                              current = classTable;
                               $$ = new Node($1, $2);
                             }
 
@@ -273,11 +291,20 @@ parameters: parameter   {
 ;
 
 parameter: INT ident   {
-                          //insert ID into symbol table. type is $1
+                          Entry * myEntry = new Entry($2->getstring(), "int",\
+                          nullptr, "", parNum);
+                          parNum++;
+                          current->paramList+=" int";
+                          current->insert($2->getstring(), myEntry);
                           $$ = new nodeParameter(7, 1, $2);
                         }
           | ident ident {
-                          //insert ID into symbol table. type is $1
+                          Entry * myEntry = new Entry($2->getstring(), \
+                          $1->getstring(), nullptr, "", parNum);
+                          parNum++;
+                          current->paramList = current->paramList + " "\
+                          + $1->getstring();
+                          current->insert($2->getstring(), myEntry);
                           $$ = new nodeParameter(7, 1, $1, $2);
                         }
 ;
@@ -303,59 +330,55 @@ block : LBRACE lVarDecs statements RBRACE {
 ;
 
 lVarDecs: INT ident SEMI {
-                          //string myID = $2->getstring();
-                          //Entry * var = new Entry(myID, "int");
-                          //current->insert(myID, var);
+                          Entry * myEntry = new Entry($2->getstring(), "int");
+                          current->insert($2->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $2);
                         }
         | ident ident SEMI {
-                          //string myType = $1->getstring();
-                          //string myID = $2->getstring();
-                          //Entry * var = new Entry(myID, \
-                          //myType, myTypeTable.lookup(myType));
-                          //current->insert($2->getstring(), var);
+                          Entry * myEntry = new Entry($2->getstring(), \
+                          $1->getstring());
+                          current->insert($2->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $1, $2);
                         }
         | lVarDecs INT ident SEMI {
-                          //string myID = $3->getstring();
-                          //Entry * var = new Entry(myID, "int");
-                          //current->insert(myID, var);
+                          Entry * myEntry = new Entry($3->getstring(), "int");
+                          current->insert($3->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, $3);
                         }
         | lVarDecs ident ident SEMI {
-                          //string myType = $2->getstring();
-                          //string myID = $3->getstring();
-                          //Entry * var = new Entry(myID, \
-                          //myType, myTypeTable.lookup(myType));
-                          //current->insert($3->getstring(), var);
+                          Entry * myEntry = new Entry($3->getstring(), \
+                          $2->getstring());
+                          current->insert($3->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, new Node ($2, $3));
                         }
         | INT bracketexps ident SEMI {
-                          //string myID = $2->getstring();
-                          //Entry * var = new Entry(myID, "int");
-                          //current->insert(myID, var);
+                          Entry * myEntry = new Entry($3->getstring(), "int");
+                          current->insert($3->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $2, $3);
                         }
         | ident bracketexps ident SEMI {
-                          //string myType = $1->getstring();
-                          //string myID = $2->getstring();
-                          //Entry * var = new Entry(myID, \
-                          //myType, myTypeTable.lookup(myType));
-                          //current->insert($2->getstring(), var);
+                          Entry * myEntry = new Entry($3->getstring(), \
+                          $2->getstring());
+                          current->insert($3->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $1, new Node($2, $3));
                         }
         | lVarDecs INT bracketexps ident SEMI {
-                          //string myID = $3->getstring();
-                          //Entry * var = new Entry(myID, "int");
-                          //current->insert(myID, var);
+                          Entry * myEntry = new Entry($4->getstring(), "int");
+                          current->insert($4->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, new Node($3, $4));
                         }
         | lVarDecs ident bracketexps ident SEMI {
-                          //string myType = $2->getstring();
-                          //string myID = $3->getstring();
-                          //Entry * var = new Entry(myID, \
-                          //myType, myTypeTable.lookup(myType));
-                          //current->insert($3->getstring(), var);
+                          Entry * myEntry = new Entry($4->getstring(), \
+                          $2->getstring());
+                          current->insert($4->getstring(), myEntry);
+                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, new Node($1, $2), new Node ($3, $4));
                         }
         | ident ident error {
@@ -404,8 +427,42 @@ statement: SEMI         {
             | RETURN exp SEMI {
                           $$ = new nodeStatement(7, 10, $2);
                         }
-            | block     {
+            | subblock     {
                           $$ = new nodeStatement(7, 11, $1);
+                        }
+;
+
+subblock : blockHead lVarDecs statements RBRACE {
+                          $$ = new nodeBlock(5, 1, $2, $3);
+                          current = current->getParent();
+                        }
+        |blockHead lVarDecs RBRACE {
+                          $$ = new nodeBlock(5, 2, $2);
+                          current = current->getParent();
+                        }
+        |blockHead statements RBRACE {
+                          $$ = new nodeBlock(5, 3, $2);
+                          current = current->getParent();
+                        }
+        |blockHead RBRACE  {
+                          $$ = new nodeBlock(5, 4);
+                          current = current->getParent();
+                        }
+        |blockHead statements error {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Expected }" << endl;
+                          yyerrok;
+                        }
+;
+
+blockHead: LBRACE       {
+                          SymbolTable* classTable = new SymbolTable(current);
+                          Entry * myEntry = new Entry("@" + blkNum,\
+                          "", classTable);
+                          current->insert("@" + blkNum, myEntry);
+                          blkNum++;
+                          current = classTable;
                         }
 ;
 
@@ -418,7 +475,7 @@ name:   THIS            {
         |name DOT ident {
                           $$ = new nodeName(8, 3, $1, $3);
                         }
-        |name bracketexp {
+        |name ebracketexps {
                           $$ = new nodeName(8, 5, $1, $2);
                         }
       | name error ident {
@@ -531,26 +588,14 @@ newexp: NEW ident LPAREN arglist RPAREN {
         |NEW INT        {
                           $$ = new Node(); 
                         }
-        |NEW INT bracketexps {
+        |NEW INT ebracketexps {
                           $$ = new nodeNewexp(11, 3, $3); 
-                        }
-        |NEW INT multibrackets {
-                          $$ = new nodeNewexp(11, 4, $3); 
-                        }
-        |NEW INT bracketexps multibrackets {
-                          $$ = new nodeNewexp(11, 5, $3,$4); 
                         }
         |NEW ident        {
                           $$ = new nodeNewexp(11, 2, $2); 
                         }
-        |NEW ident bracketexps {
+        |NEW ident ebracketexps {
                           $$ = new nodeNewexp(11, 3, $2,$3); 
-                        }
-        |NEW ident multibrackets {
-                          $$ = new nodeNewexp(11, 4, $3); 
-                        }
-        |NEW ident bracketexps multibrackets {
-                          $$ = new nodeNewexp(11, 5, $2, new Node($3,$4)); 
                         }
 ;
 
@@ -567,13 +612,40 @@ bracketexps:  bracketexp {
 
 bracketexp: LBRACK exp RBRACK {
                           $$ = new nodeBracketExp(13, 1, $2);
+                          curEnt->myType += "[]";
                         }
 ;
 
 multibrackets: LBRACK RBRACK {
                           $$ = new nodeMultibrackets(12, 1);
+                          curEnt->myType += "[]";
                         }
                |multibrackets LBRACK RBRACK {
+                          $$ = new nodeMultibrackets(12, 2, $1);
+                          curEnt->myType += "[]";
+                        }
+;
+
+ebracketexps:  ebracketexp {
+                          $$ = new nodeBracketExps(12, 1, $1);
+                        }
+              |ebracketexp ebracketexps {
+                          $$ = new nodeBracketExps(12, 2, $1,$2);
+                        }
+              | emultibrackets {
+                          $$ = new Node($1);
+                        }
+;
+
+ebracketexp: LBRACK exp RBRACK {
+                          $$ = new nodeBracketExp(13, 1, $2);
+                        }
+;
+
+emultibrackets: LBRACK RBRACK {
+                          $$ = new nodeMultibrackets(12, 1);
+                        }
+               |emultibrackets LBRACK RBRACK {
                           $$ = new nodeMultibrackets(12, 2, $1);
                         }
 ;
