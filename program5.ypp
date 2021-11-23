@@ -40,7 +40,6 @@ SymbolTable *global = new SymbolTable();
 SymbolTable *current = global;
 int blkNum = 0;
 int parNum = 1;
-Entry * curEnt = new Entry("global", "global");
 /* 
  * Need to do this define, an "acceptable" hack to interface
  * the C++ scanner with the C parser. 
@@ -120,7 +119,6 @@ classHead: CLASS ident  {
                           classTable, "class_type");
                           current->insert($2->getstring(), myEntry);
                           current = classTable;
-                          curEnt = myEntry;
                           myTypeTable.insert($2->getstring(), myEntry);
                           $$ = new Node($2);
                         }
@@ -156,53 +154,61 @@ classBody: LBRACE RBRACE {
 vardec: INT ident SEMI {
                           Entry * myEntry = new Entry($2->getstring(), "int");
                           current->insert($2->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $2);
                         }
         | ident ident SEMI {
                           Entry * myEntry = new Entry($2->getstring(), \
                           $1->getstring());
                           current->insert($2->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $1, $2);
                         }
         | vardec INT ident SEMI {
                           Entry * myEntry = new Entry($3->getstring(), "int");
                           current->insert($3->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, $3);
                         }
         | vardec ident ident SEMI {
                           Entry * myEntry = new Entry($3->getstring(), \
                           $2->getstring());
                           current->insert($3->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, new Node ($2, $3));
                         }
         | INT bracketexps ident SEMI {
                           Entry * myEntry = new Entry($3->getstring(), "int");
+                          for (int i = 0; i < $2->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
                           current->insert($3->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $2, $3);
                         }
         | ident bracketexps ident SEMI {
                           Entry * myEntry = new Entry($3->getstring(), \
                           $2->getstring());
+                          for (int i = 0; i < $2->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
                           current->insert($3->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $1, new Node($2, $3));
                         }
         | vardec  INT bracketexps ident SEMI {
                           Entry * myEntry = new Entry($4->getstring(), "int");
+                          for (int i = 0; i < $3->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
                           current->insert($4->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, new Node($3, $4));
                         }
         | vardec  ident bracketexps ident SEMI {
                           Entry * myEntry = new Entry($4->getstring(), \
                           $2->getstring());
+                          for (int i = 0; i < $3->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
                           current->insert($4->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, new Node($1, $2), new Node ($3, $4));
                         }
 ;
@@ -332,53 +338,61 @@ block : LBRACE lVarDecs statements RBRACE {
 lVarDecs: INT ident SEMI {
                           Entry * myEntry = new Entry($2->getstring(), "int");
                           current->insert($2->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $2);
                         }
         | ident ident SEMI {
                           Entry * myEntry = new Entry($2->getstring(), \
                           $1->getstring());
                           current->insert($2->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $1, $2);
                         }
         | lVarDecs INT ident SEMI {
                           Entry * myEntry = new Entry($3->getstring(), "int");
                           current->insert($3->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, $3);
                         }
         | lVarDecs ident ident SEMI {
                           Entry * myEntry = new Entry($3->getstring(), \
                           $2->getstring());
                           current->insert($3->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, new Node ($2, $3));
                         }
         | INT bracketexps ident SEMI {
                           Entry * myEntry = new Entry($3->getstring(), "int");
+                          for (int i = 0; i < $2->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
                           current->insert($3->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $2, $3);
                         }
         | ident bracketexps ident SEMI {
                           Entry * myEntry = new Entry($3->getstring(), \
                           $2->getstring());
+                          for (int i = 0; i < $2->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
                           current->insert($3->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 1, $1, new Node($2, $3));
                         }
         | lVarDecs INT bracketexps ident SEMI {
                           Entry * myEntry = new Entry($4->getstring(), "int");
+                          for (int i = 0; i < $3->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
                           current->insert($4->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, $1, new Node($3, $4));
                         }
         | lVarDecs ident bracketexps ident SEMI {
                           Entry * myEntry = new Entry($4->getstring(), \
                           $2->getstring());
+                          for (int i = 0; i < $3->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
                           current->insert($4->getstring(), myEntry);
-                          curEnt = myEntry;
                           $$ = new nodeVardec(4, 2, new Node($1, $2), new Node ($3, $4));
                         }
         | ident ident error {
@@ -601,28 +615,30 @@ newexp: NEW ident LPAREN arglist RPAREN {
 
 bracketexps:  bracketexp {
                           $$ = new nodeBracketExps(12, 1, $1);
+                          $$->setval(1);
                         }
               |bracketexp bracketexps {
                           $$ = new nodeBracketExps(12, 2, $1,$2);
+                          $$->setval(1 + $2->getint());
                         }
               | multibrackets {
                           $$ = new Node($1);
+                          $$->setval($1->getint());
                         }
 ;
 
 bracketexp: LBRACK exp RBRACK {
                           $$ = new nodeBracketExp(13, 1, $2);
-                          curEnt->myType += "[]";
                         }
 ;
 
 multibrackets: LBRACK RBRACK {
                           $$ = new nodeMultibrackets(12, 1);
-                          curEnt->myType += "[]";
+                          $$->setval(1);
                         }
                |multibrackets LBRACK RBRACK {
                           $$ = new nodeMultibrackets(12, 2, $1);
-                          curEnt->myType += "[]";
+                          $$->setval(1+ $1->getint());
                         }
 ;
 
