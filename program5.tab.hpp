@@ -93,7 +93,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 63 "program5.ypp" /* yacc.c:1909  */
+#line 65 "program5.ypp" /* yacc.c:1909  */
 
   Node *ttype;
 

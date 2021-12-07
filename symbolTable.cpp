@@ -12,9 +12,10 @@
 using std::cout;
 using std::endl;
 
-SymbolTable::SymbolTable(SymbolTable *parent)
+SymbolTable::SymbolTable(SymbolTable *parent, string name)
 {
     myParent = parent;
+    myName = name;
 }
 
 SymbolTable::~SymbolTable(){};

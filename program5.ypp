@@ -36,7 +36,7 @@ extern Node *tree;
 extern yyFlexLexer scanner;
 extern int firstColumn;
 TypeTable myTypeTable;
-SymbolTable *global = new SymbolTable();
+SymbolTable *global = new SymbolTable(nullptr, "global");
 SymbolTable *current = global;
 int blkNum = 0;
 int parNum = 1;
@@ -114,7 +114,8 @@ classDeclaration: classHead classBody {
 ;
 
 classHead: CLASS ident  {
-                          SymbolTable* classTable = new SymbolTable(current);
+                          SymbolTable* classTable = new SymbolTable(current,\
+                          $2->getstring());
                           Entry * myEntry = new Entry("",$2->getstring(), \
                           classTable, "class_type");
                           current->insert($2->getstring(), myEntry);
@@ -209,7 +210,8 @@ vardec: INT ident SEMI {
                             myEntry->myType += "[]";
                           }
                           current->insert($4->getstring(), myEntry);
-                          $$ = new nodeVardec(4, 2, new Node($1, $2), new Node ($3, $4));
+                          $$ = new nodeVardec(4, 2, new Node($1, $2), new Node\
+                           ($3, $4));
                         }
 ;
 
@@ -227,15 +229,23 @@ consdec: consHead parList RPAREN block {
 ;
 
 consHead : ident LPAREN {
-                          SymbolTable* classTable = new SymbolTable(current);
-                          Entry * myEntry = new Entry("",$1->getstring(), \
-                          classTable, "constructor_type");
+                          SymbolTable* classTable = new SymbolTable(current,\
+                           $1->getstring());
+                          Entry * myEntry = new Entry(""+classTable->consCount\
+                          ,$1->getstring(), classTable, "constructor_type");
                           current->insert($1->getstring(), myEntry);
+                          classTable->consCount ++;
                           current = classTable;
                           $$ = new Node($1);
                         }
 
 methdec: methHead parList RPAREN block {
+                          if(current->myName == "main" && current->paramList \
+                          != "")
+                          {
+                            cout << "Error: Line " << scanner.lineno() << \
+                            " main shouldn't have parameters.";
+                          }
                           $$ = new nodeMethdec(4, 1, $1, new Node($2, $4));
                           current = current->getParent();
                           parNum = 1;
@@ -255,31 +265,49 @@ methdec: methHead parList RPAREN block {
 ;
 
 methHead : INT ident LPAREN {
+                              if($2->getstring() == "main")
+                              {
+                                if(current->lookup("main") == "not found");
+                                {
                               SymbolTable* classTable = new SymbolTable\
-                              (current);
+                              (current, $2->getstring());
                               Entry * myEntry = new Entry($2-> getstring(),\
                               "int", classTable, "method_type");
                               current->insert($2->getstring(), myEntry);
                               current = classTable;
                               $$ = new Node($2);
+                                }
+                              }
                             }
           | VOID ident LPAREN {
+                              if($2->getstring() == "main")
+                              {
+                                if(current->lookup("main") == "not found");
+                                {
                               SymbolTable* classTable = new SymbolTable\
-                              (current);
+                              (current, $2->getstring());
                               Entry * myEntry = new Entry($2-> getstring(),\
                               "void", classTable, "method_type");
                               current->insert($2->getstring(), myEntry);
                               current = classTable;
                               $$ = new Node($2);
+                                }
+                              }
                             }
           | ident ident LPAREN {
+                              if($2->getstring() == "main")
+                              {
+                                if(current->lookup("main") == "not found");
+                                {
                               SymbolTable* classTable = new SymbolTable\
-                              (current);
+                              (current, $2->getstring());
                               Entry * myEntry = new Entry($2-> getstring(),\
                               $1->getstring(), classTable, "method_type");
                               current->insert($2->getstring(), myEntry);
                               current = classTable;
                               $$ = new Node($1, $2);
+                                }
+                              }
                             }
 
 parList : {$$ = nullptr;} %empty 
@@ -471,7 +499,8 @@ subblock : blockHead lVarDecs statements RBRACE {
 ;
 
 blockHead: LBRACE       {
-                          SymbolTable* classTable = new SymbolTable(current);
+                          SymbolTable* classTable = new SymbolTable(current,\
+                          "@" + blkNum);
                           Entry * myEntry = new Entry("@" + blkNum,\
                           "", classTable);
                           current->insert("@" + blkNum, myEntry);
@@ -492,11 +521,16 @@ name:   THIS            {
         |name ebracketexps {
                           $$ = new nodeName(8, 5, $1, $2);
                         }
-      | name error ident {
+        | name error ident {
                           cout << scanner.lineno() << ":" << firstColumn;
                           cout << ":: "; //<<contents of line << endl;
                           cout << "Error. Perhaps you meant period?" << endl;
                           yyerrok;
+                        }
+        | name DOT THIS {                          
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << "Error. keyword THIS must be start of name"\
+                          << endl << "This variable will be ignored." << endl;
                         }
 ;
 
@@ -545,6 +579,10 @@ exp:   name             {
                         }
        | exp PLUS exp   { 
                           $$=new nodeExp(10, 7, $1,$3);
+                          if ($1->check(current) != "int")
+                          {
+                            cout << "Error " << scanner.lineno() << ": left arg is not of type int." << endl;
+                          }
                         }
        | exp MINUS exp  { 
                           $$=new nodeExp(10, 8, $1,$3);

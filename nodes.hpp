@@ -19,6 +19,7 @@
 #define NODES_HPP
 #include<iostream>
 #include<string>
+#include"symbolTable.hpp"
 
 using std::string;
 using std::endl;
@@ -31,6 +32,7 @@ class Node
     // set the pointers to 0 C++ is trying to get away from NULL
     Node(Node *lf=0,Node *rt=0) ;
     virtual ~Node();
+    string check(SymbolTable *curtable);
     int getint() const;
     int getcol() const;
     double getdbl() const;

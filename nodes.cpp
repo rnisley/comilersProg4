@@ -25,6 +25,12 @@ Node::~Node()
   if(right) delete right;
 }
 
+string Node::check(SymbolTable *curtable)
+{
+  if(left) return left->check(curtable);
+  return "";
+}
+
 int Node::getcol() const
 {
   return mycol;

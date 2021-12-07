@@ -20,7 +20,7 @@ class Entry;
 class SymbolTable
 {
     public:
-    SymbolTable(SymbolTable *parent = nullptr);
+    SymbolTable(SymbolTable *parent, string name);
     ~SymbolTable();
 
     SymbolTable* getParent();
@@ -29,7 +29,8 @@ class SymbolTable
 
     string paramList = "";
     unordered_map<string, Entry*> table;
-    
+    string myName;
+    int consCount = 0;
     private:
     SymbolTable *myParent;
 };
