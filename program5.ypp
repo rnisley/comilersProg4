@@ -450,12 +450,36 @@ statement: SEMI         {
                         }
             | name ASSIGN exp SEMI {
                           $$ = new nodeStatement(7, 2, $1,$3);
+                          if($3->getstring() == "null")
+                          {
+                            if ($1->getstring() == "int")
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg type doesn't match right arg type."\
+                             << endl;
+                            }
+                            $$->setval($1->getstring());
+                          }
+                          else if ($1->getstring() != $3->getstring() || \
+                          "new " + $1->getstring() != $3->getstring())
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg type doesn't match right arg type."\
+                             << endl;
+                            $$->setval($1->getstring());
+                          }
+                          else
+                          {
+                            $$->setval($1->getstring());
+                          }
                         }
             | name LPAREN arglist RPAREN SEMI {
                           $$ = new nodeStatement(7, 4, $1, $3);
+                          $$->setval($1->getstring());
                         }
             | PRINT LPAREN arglist RPAREN SEMI {
                           $$ = new nodeStatement(7, 6, $3);
+                          $$->setval("void");
                         }
             | conStatement {
                           $$ = new nodeStatement(7, 7, $1);
@@ -467,6 +491,10 @@ statement: SEMI         {
                           $$ = new nodeStatement(7, 9);
                         }
             | RETURN exp SEMI {
+                          if (current->parent->lookup(current->myName) != $2->getstring())
+                          {
+                            cout << "Return statement doesn't match return type."
+                          }
                           $$ = new nodeStatement(7, 10, $2);
                         }
             | subblock     {
@@ -511,12 +539,24 @@ blockHead: LBRACE       {
 
 name:   THIS            {
                           $$ = new nodeName(8, 1);
+                          $$->setval(current->myParent->lookup(current->myName));
                         }
-        |ident             {
+        |ident          {
                           $$ = new nodeName(8, 2, $1);
+                          $$->setval(current->lookup($1->getstring()));
                         }
         |name DOT ident {
                           $$ = new nodeName(8, 3, $1, $3);
+                          if($1->getstring() == ("int" || "void"))
+                          {
+                          cout << scanner.lineno() << ":" << firstColumn\
+                          << ":Error incorrect type in name.ident" << endl;
+                          $$->setval("int");
+                          } else
+                          {
+                          $$->setval(myTypeTable->lookup($1->getstring())->\
+                          myTypeST->lookup($3->getstring()));
+                          }
                         }
         |name ebracketexps {
                           $$ = new nodeName(8, 5, $1, $2);
@@ -560,91 +600,282 @@ exps: exp               {
 
 exp:   name             {
                           $$ = new nodeExp(10, 1, $1);
+                          $$->setval($1->getstring());
                         } 
        |NUM             {       
                           $$=new nodeExp(10, 2);
-                          $$->setval($1->getint());
+                          $$->setval("int");
                         }
        | NULLT          { 
                           $$=new nodeExp(10, 3);
+                          $$->setval("null");
                         }
        |name LPAREN arglist RPAREN {
                           $$ = new nodeExp(10, 4, $1, $3);
+                          $$->setval($1->getstring());
                         }
        |READ LPAREN RPAREN {
                           $$ = new nodeExp(10, 5);
+                          $$->setval("int");
                         }
        |newexp          {
                           $$ = new nodeExp(10, 6, $1);
+                          $$->setval($1->getstring());
                         }
        | exp PLUS exp   { 
                           $$=new nodeExp(10, 7, $1,$3);
-                          if ($1->check(current) != "int")
+                          if ($1->getstring() != "int")
                           {
-                            cout << "Error " << scanner.lineno() << ": left arg is not of type int." << endl;
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
                           }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp MINUS exp  { 
                           $$=new nodeExp(10, 8, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp OR exp     { 
                           $$=new nodeExp(10, 9, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp TIMES exp  { 
                           $$=new nodeExp(10, 10, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp DIV exp    {
                           $$=new nodeExp(10, 11, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp MOD exp    {
                           $$=new nodeExp(10, 12, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp AND exp    {
                           $$=new nodeExp(10, 13, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp EQ exp     {
                           $$=new nodeExp(10, 14, $1,$3);
+                          if ($1->getstring() == "null") 
+                          {
+                            if ($3->getstring() == "int")
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg type doesn't match right arg type."\
+                             << endl;
+                            }
+                          }
+                          else if($3->getstring() == "null")
+                          {
+                            if ($1->getstring() == "int")
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg type doesn't match right arg type."\
+                             << endl;
+                            }
+                          }
+                          else if ($1->getstring() != $3->getstring() || \
+                          "new " + $1->getstring() != $3->getstring())
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg type doesn't match right arg type."\
+                             << endl;
+                          }
+                          $$->setval("int"));
                         }
        | exp NE exp     {
                           $$=new nodeExp(10, 15, $1,$3);
+                          if ($1->getstring() == "null") 
+                          {
+                            if ($3->getstring() == "int")
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg type doesn't match right arg type."\
+                             << endl;
+                            }
+                          }
+                          else if($3->getstring() == "null")
+                          {
+                            if ($1->getstring() == "int")
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg type doesn't match right arg type."\
+                             << endl;
+                            }
+                          }
+                          else if ($1->getstring() != $3->getstring() || \
+                          "new " + $1->getstring() != $3->getstring())
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg type doesn't match right arg type."\
+                             << endl;
+                          }
+                            $$->setval($1->getstring());
                         }
        | exp GE exp     {
                           $$=new nodeExp(10, 16, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp LE exp     { 
                           $$=new nodeExp(10, 17, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp GT exp     {
                           $$=new nodeExp(10, 18, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ": right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | exp LT exp     { 
                           $$=new nodeExp(10, 19, $1,$3);
+                          if ($1->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error left arg is not of type int." << endl;
+                          }
+                          if ($3->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | MINUS exp  %prec NEG { 
                           $$=new nodeExp(10, 20, $2);
+                          if ($2->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | PLUS exp  %prec UPLUS { 
                           $$=new nodeExp(10, 21, $2);
+                          if ($2->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error right arg is not of type int." << endl;
+                          }
+                          $$->setval("int");
                         }
        | LPAREN exp RPAREN    { 
                           $$=new nodeExp(10, 22, $2);
+                          $$->setval($2->getstring());
                         }
        | NOT exp        { 
                           $$=new nodeExp(10, 23, $2);
+                          $$->setval("int");
                         }
 ;
 
 newexp: NEW ident LPAREN arglist RPAREN {
                           $$ = new nodeNewexp(11, 1, $4); 
+                          $$->setval("new " + $1->getstring());
                         }
         |NEW INT        {
                           $$ = new Node(); 
+                          $$->setval("new int");
                         }
         |NEW INT ebracketexps {
                           $$ = new nodeNewexp(11, 3, $3); 
                         }
         |NEW ident        {
-                          $$ = new nodeNewexp(11, 2, $2); 
+                          $$ = new nodeNewexp(11, 2, $2);
+                          $$->setval("new " + $1->getstring()); 
                         }
         |NEW ident ebracketexps {
                           $$ = new nodeNewexp(11, 3, $2,$3); 
@@ -667,6 +898,11 @@ bracketexps:  bracketexp {
 
 bracketexp: LBRACK exp RBRACK {
                           $$ = new nodeBracketExp(13, 1, $2);
+                          if ($2->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error val in [] is not of type int." << endl;
+                          }
                         }
 ;
 
@@ -693,6 +929,11 @@ ebracketexps:  ebracketexp {
 
 ebracketexp: LBRACK exp RBRACK {
                           $$ = new nodeBracketExp(13, 1, $2);
+                          if ($2->getstring() != "int")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn \
+                            ":Error val in [] is not of type int." << endl;
+                          }
                         }
 ;
 
