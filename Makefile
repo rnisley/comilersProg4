@@ -10,30 +10,30 @@ YFLAGS=--report=state -W -d
 LEX=flex
 LEX=flex++
 LFLAGS=--warn
-SRC=program5.cpp program5.tab.cpp program5_lex.cpp nodes.cpp typeTable.cpp symbolTable.cpp
-HDRS=program5.tab.hpp nodes.hpp typeTable.hpp symbolTable.hpp 
+SRC=program6.cpp program6.tab.cpp program6_lex.cpp nodes.cpp typeTable.cpp symbolTable.cpp
+HDRS=program6.tab.hpp nodes.hpp typeTable.hpp symbolTable.hpp 
 
 .PHONY: clean tarball
 
-program5: $(SRC) $(HDRS)
-	$(CXX) $(CXXFLAGS) $(SRC) -o program5
+program6: $(SRC) $(HDRS)
+	$(CXX) $(CXXFLAGS) $(SRC) -o program6
 
-program5.tab.cpp : program5.ypp nodes.hpp
-	$(YACC) $(YFLAGS) program5.ypp
+program6.tab.cpp : program6.ypp nodes.hpp
+	$(YACC) $(YFLAGS) program6.ypp
 
-program5_lex.cpp: program5.lpp nodes.hpp
-	$(LEX) $(LFLAGS) program5.lpp
+program6_lex.cpp: program6.lpp nodes.hpp
+	$(LEX) $(LFLAGS) program6.lpp
 
 tidy:
-	/bin/rm -f a.out core.* program5.tab.* program5.output \
-	  program5_lex.cpp
+	/bin/rm -f a.out core.* program6.tab.* program6.output \
+	  program6_lex.cpp
 
 # the tidy rule cleans up but leaves the executable. The clean, uses tidy
 # then it removes the executable. 
 clean: tidy
-	/bin/rm -f program5 
+	/bin/rm -f program6 
 
 tarball:
-	tar cf program5.tar Makefile nodes.hpp nodes.cpp program5.lpp program5.ypp\
-	  program5.cpp program5.odt typeTable.cpp typeTable.hpp symbolTable.cpp \
-	  symbolTable.hpp entry.cpp entry.hpp
+	tar cf program6.tar Makefile nodes.hpp nodes.cpp program6.lpp program6.ypp\
+	  program6.cpp program6.odt typeTable.cpp typeTable.hpp symbolTable.cpp \
+	  symbolTable.hpp 

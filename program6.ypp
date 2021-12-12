@@ -1,0 +1,1038 @@
+/* vim: ft=yacc
+ * That vim filetype setting is not need if I don't rename the file
+ * Simple Infix notation calculator.  
+ *
+ * program6.ypp
+ * COSC4785
+ * Ric Nisley
+ * 10/9/2021
+ *
+ * based on simple.ypp by kbuckner
+ *
+ */
+
+
+ 
+%{
+
+//#include <cmath> // for pow() in the original version of this
+#include <iostream>
+#include <FlexLexer.h>// yes have to include this here AND in the 'driver'
+#include "nodes.hpp"
+#include "typeTable.hpp"
+#include "symbolTable.hpp"
+
+//DO NOT USE "namespace std;"
+using std::cerr;
+using std::cout;
+using std::endl;
+
+/*
+ * These are declared in "main" so that we can pass values between
+ * the two portions of the program.
+ */
+
+extern Node *tree;
+extern yyFlexLexer scanner;
+extern int firstColumn;
+TypeTable myTypeTable;
+SymbolTable *global = new SymbolTable(nullptr, "global");
+SymbolTable *current = global;
+int blkNum = 0;
+int parNum = 1;
+int mainCount = 0;
+/* 
+ * Need to do this define, an "acceptable" hack to interface
+ * the C++ scanner with the C parser. 
+ * I can still use things like scanner.YYtext() here if I want. Just that
+ * (*bison*) does not know about cpp scanners, only the "C" version. 
+ */
+
+#define yylex() scanner.yylex()
+
+// need the function prototype for the parser. defined it in the lpp file
+
+void yyerror(const char *);
+
+
+/*
+ * There are lots of examples that have multiple types in the union here.
+ * DO NOT DO THAT. Keep it simple, one type. This is the type that you use
+ * in the definitions for %type tokens.
+ */
+
+%}
+
+%union {
+  Node *ttype;
+}
+
+/* 
+ * Bison declarations.  All the 'names' here will be put into an enum
+ * in the *.tab.hpp file. Include that in the .lpp file and then "return NUM;"
+ * passes back the value. 
+ *
+ * To pass the parser a value, say for NUM, you must use 
+ * yylval.ttype in the scanner. You could have a number of things in the union
+ * but do not get cute. pointers, char, int, double. DO NOT use a class or 
+ * struct declaration in the union. 
+ *
+ * The "exp" is only used here in this file but must be given a type if 
+ *(in this case) it is ever assigned a value. See the rules.
+ */
+%type<ttype> exp program classDeclaration vardec bracketexps blockHead subblock
+bracketexp name multibrackets newexp classBody consdec methdec parList block 
+parameters exps parameter lVarDecs statement statements conStatement arglist
+ident classHead consHead methHead ebracketexps ebracketexp emultibrackets
+%token<ttype> NUM 
+%token RPAREN LPAREN NULLT INT THIS ID DOT LBRACK RBRACK SEMI READ NEW CLASS 
+%token LBRACE RBRACE VOID COMMA PRINT WHILE RETURN IF ELSE ASSIGN
+%left EQ NE GE LE GT LT
+%left PLUS MINUS OR   /* shift-reduce errors are solved by this */
+%left TIMES DIV MOD AND    /* shift-reduce errors are solved by this */
+%precedence NEG UPLUS NOT   /* negation--unary minus, not using right now*/
+
+
+%% /* The grammar follows.  */
+/* Do yourself a favor. Figure out a 'standard' formatting for this. Otherwise
+ * it will just just be a big mess you cannot find anything in. 
+ * FOLLOW THE STYLE GUIDE. You can use tabs as tabs but NOT indentation. */
+
+program:  classDeclaration {
+                          tree=$1;
+                          $$=$1;
+                        }
+      | program classDeclaration {
+                          $1->setnext($2);
+                          $$=$1;
+                        }
+;  /*trust me, don't forget the semicolon*/
+
+classDeclaration: classHead classBody {
+                        $$ = new nodeClassDec(2, 1, $1, $2);
+                        current = current->getParent();
+                        }
+;
+
+classHead: CLASS ident  {
+                          SymbolTable* classTable = new SymbolTable(current,\
+                          $2->getstring());
+                          Entry * myEntry = new Entry("",$2->getstring(), \
+                          classTable, "class_type");
+                          current->insert($2->getstring(), myEntry);
+                          current = classTable;
+                          myTypeTable.insert($2->getstring(), myEntry);
+                          $$ = new Node($2);
+                        }
+;
+
+classBody: LBRACE RBRACE {
+                        $$ = new nodeClassBody(3, 1);
+                        }
+          |LBRACE vardec consdec methdec RBRACE {
+                        $$ = new nodeClassBody(3, 2, $2, new Node($3, $4));
+                        }
+          |LBRACE vardec consdec RBRACE {
+                        $$ = new nodeClassBody(3, 3, $2, $3);
+                        }
+          |LBRACE consdec methdec RBRACE {
+                        $$ = new nodeClassBody(3, 4, $2, $3);
+                        }
+          |LBRACE vardec methdec RBRACE {
+                        $$ = new nodeClassBody(3, 5, $2, $3);
+                        }
+          |LBRACE vardec RBRACE {
+                        $$ = new nodeClassBody(3, 6, $2);
+                        }
+          |LBRACE consdec RBRACE {
+                        $$ = new nodeClassBody(3, 7, $2);
+                        }
+          |LBRACE methdec RBRACE {
+                        $$ = new nodeClassBody(3, 8, $2);
+                        }
+;
+
+
+vardec: INT ident SEMI {
+                          Entry * myEntry = new Entry($2->getstring(), "int");
+                          current->insert($2->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 1, $2);
+                        }
+        | ident ident SEMI {
+                          Entry * myEntry = new Entry($2->getstring(), \
+                          $1->getstring());
+                          current->insert($2->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 1, $1, $2);
+                        }
+        | vardec INT ident SEMI {
+                          Entry * myEntry = new Entry($3->getstring(), "int");
+                          current->insert($3->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 2, $1, $3);
+                        }
+        | vardec ident ident SEMI {
+                          Entry * myEntry = new Entry($3->getstring(), \
+                          $2->getstring());
+                          current->insert($3->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 2, $1, new Node ($2, $3));
+                        }
+        | INT bracketexps ident SEMI {
+                          Entry * myEntry = new Entry($3->getstring(), "int");
+                          for (int i = 0; i < $2->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
+                          current->insert($3->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 1, $2, $3);
+                        }
+        | ident bracketexps ident SEMI {
+                          Entry * myEntry = new Entry($3->getstring(), \
+                          $2->getstring());
+                          for (int i = 0; i < $2->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
+                          current->insert($3->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 1, $1, new Node($2, $3));
+                        }
+        | vardec  INT bracketexps ident SEMI {
+                          Entry * myEntry = new Entry($4->getstring(), "int");
+                          for (int i = 0; i < $3->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
+                          current->insert($4->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 2, $1, new Node($3, $4));
+                        }
+        | vardec  ident bracketexps ident SEMI {
+                          Entry * myEntry = new Entry($4->getstring(), \
+                          $2->getstring());
+                          for (int i = 0; i < $3->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
+                          current->insert($4->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 2, new Node($1, $2), new Node\
+                           ($3, $4));
+                        }
+;
+
+consdec: consHead parList RPAREN block {
+                          $$ = new nodeConsdec(4, 1, $1, new Node($2, $4));
+                          current = current->getParent();
+                          parNum = 1;
+                        }
+         |consdec consHead parList RPAREN block {
+                         $$ = new nodeConsdec(4, 2, new Node($1, $2), new Node\
+                          ($3, $5));
+                          current = current->getParent();
+                          parNum = 1;
+                        }
+;
+
+consHead : ident LPAREN {
+                          current->consCount ++;
+                          SymbolTable* classTable = new SymbolTable(current,\
+                           $1->getstring());
+                          Entry * myEntry = new Entry(""+current->consCount\
+                          ,$1->getstring(), classTable, "constructor_type");
+                          current->insert(""+current->consCount, myEntry);
+                          current = classTable;
+                          $$ = new Node($1);
+                        }
+
+methdec: methHead parList RPAREN block {
+                          $$ = new nodeMethdec(4, 1, $1, new Node($2, $4));
+                          current = current->getParent();
+                          parNum = 1;
+                        }
+         |methdec methHead parList RPAREN block {
+                          $$ = new nodeMethdec(4, 2, new Node($1, $2)\
+                          , new Node($3, $5));
+                          current = current->getParent();
+                          parNum = 1;
+                        }
+         |methHead error {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Expected ) or parameters." << endl;
+                          yyerrok;
+                        }
+;
+
+methHead : INT ident LPAREN {
+                              if($2->getstring() == "main")
+                              {
+                                if(mainCount != 0)
+                                {
+                                cout << scanner.lineno() << ":" << firstColumn\
+                                << ":Error main declared more than once."\
+                                << endl;
+                                }
+                                mainCount++;
+                              }
+                              SymbolTable* classTable = new SymbolTable\
+                              (current, $2->getstring());
+                              Entry * myEntry = new Entry($2-> getstring(),\
+                              "int", classTable, "method_type");
+                              current->insert($2->getstring(), myEntry);
+                              current = classTable;
+                              $$ = new Node($2);
+                              
+                            }
+          | VOID ident LPAREN {
+                              if($2->getstring() == "main")
+                              {
+                                if(mainCount != 0)
+                                {
+                                cout << scanner.lineno() << ":" << firstColumn\
+                                << ":Error main declared more than once."\
+                                << endl;
+                                }
+                                mainCount++;
+                              }
+                              SymbolTable* classTable = new SymbolTable\
+                              (current, $2->getstring());
+                              Entry * myEntry = new Entry($2-> getstring(),\
+                              "void", classTable, "method_type");
+                              current->insert($2->getstring(), myEntry);
+                              current = classTable;
+                              $$ = new Node($2);
+                            }
+          | ident ident LPAREN {
+                              if($2->getstring() == "main")
+                              {
+                                if(current->lookup("main") == "not found");
+                                {
+                              SymbolTable* classTable = new SymbolTable\
+                              (current, $2->getstring());
+                              Entry * myEntry = new Entry($2-> getstring(),\
+                              $1->getstring(), classTable, "method_type");
+                              current->insert($2->getstring(), myEntry);
+                              current = classTable;
+                              $$ = new Node($1, $2);
+                                }
+                              }
+                            }
+
+parList : {$$ = nullptr;} %empty 
+         | parameters   {
+                          $$ = new nodeParlist(5, 2, $1);
+                          if(current->myName == "main")
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn << \
+                            ":Error main shouldn't have parameters." << endl;
+                          }
+                        }
+;
+
+parameters: parameter   {
+                          $$ = new nodeParameters(6, 1, $1);
+                        }
+            | parameters COMMA parameter {
+                          $$ = new nodeParameters(6, 2, $1, $3);
+                        }
+;
+
+parameter: INT ident   {
+                          Entry * myEntry = new Entry($2->getstring(), "int",\
+                          nullptr, "", parNum);
+                          parNum++;
+                          current->paramList+=" int";
+                          current->insert($2->getstring(), myEntry);
+                          $$ = new nodeParameter(7, 1, $2);
+                        }
+          | ident ident {
+                          Entry * myEntry = new Entry($2->getstring(), \
+                          $1->getstring(), nullptr, "", parNum);
+                          parNum++;
+                          current->paramList = current->paramList + " "\
+                          + $1->getstring();
+                          current->insert($2->getstring(), myEntry);
+                          $$ = new nodeParameter(7, 1, $1, $2);
+                        }
+;
+
+block : LBRACE lVarDecs statements RBRACE {
+                          $$ = new nodeBlock(5, 1, $2, $3);
+                        }
+        |LBRACE lVarDecs RBRACE {
+                          $$ = new nodeBlock(5, 2, $2);
+                        }
+        |LBRACE statements RBRACE {
+                          $$ = new nodeBlock(5, 3, $2);
+                        }
+        |LBRACE RBRACE  {
+                          $$ = new nodeBlock(5, 4);
+                        }
+        |LBRACE statements error {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Expected }" << endl;
+                          yyerrok;
+                        }
+;
+
+lVarDecs: INT ident SEMI {
+                          Entry * myEntry = new Entry($2->getstring(), "int");
+                          current->insert($2->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 1, $2);
+                        }
+        | ident ident SEMI {
+                          Entry * myEntry = new Entry($2->getstring(), \
+                          $1->getstring());
+                          current->insert($2->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 1, $1, $2);
+                        }
+        | lVarDecs INT ident SEMI {
+                          Entry * myEntry = new Entry($3->getstring(), "int");
+                          current->insert($3->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 2, $1, $3);
+                        }
+        | lVarDecs ident ident SEMI {
+                          Entry * myEntry = new Entry($3->getstring(), \
+                          $2->getstring());
+                          current->insert($3->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 2, $1, new Node ($2, $3));
+                        }
+        | INT bracketexps ident SEMI {
+                          Entry * myEntry = new Entry($3->getstring(), "int");
+                          for (int i = 0; i < $2->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
+                          current->insert($3->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 1, $2, $3);
+                        }
+        | ident bracketexps ident SEMI {
+                          Entry * myEntry = new Entry($3->getstring(), \
+                          $2->getstring());
+                          for (int i = 0; i < $2->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
+                          current->insert($3->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 1, $1, new Node($2, $3));
+                        }
+        | lVarDecs INT bracketexps ident SEMI {
+                          Entry * myEntry = new Entry($4->getstring(), "int");
+                          for (int i = 0; i < $3->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
+                          current->insert($4->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 2, $1, new Node($3, $4));
+                        }
+        | lVarDecs ident bracketexps ident SEMI {
+                          Entry * myEntry = new Entry($4->getstring(), \
+                          $2->getstring());
+                          for (int i = 0; i < $3->getint(); i++)
+                          {
+                            myEntry->myType += "[]";
+                          }
+                          current->insert($4->getstring(), myEntry);
+                          $$ = new nodeVardec(4, 2, new Node($1, $2), new Node ($3, $4));
+                        }
+        | ident ident error {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Suspect missing semicolon." << endl;
+                          yyerrok;
+                        }
+        | INT ident error {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Suspect missing semicolon." << endl;
+                          yyerrok;
+                        }
+;
+
+statements: statement   {
+                          $$ = new nodeStatements(6, 1, $1);
+                        }       
+            |statements statement {
+                          $$ = new nodeStatements(6, 2, $1, $2);
+                        }
+;
+
+statement: SEMI         {
+                          $$ = new nodeStatement(7, 1);
+                        }
+            | name ASSIGN exp SEMI {
+                          $$ = new nodeStatement(7, 2, $1,$3);
+                          string varNull = "null";
+                          string varInt = "int";
+                          if($3->getstring() == varNull)
+                          {
+                            if ($1->getstring() == varInt)
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg type doesn't match right arg "\
+                             << "type in =" << endl;
+                            }
+                            $$->setval($1->getstring());
+                          }
+                          else if (($1->getstring() != $3->getstring()) && \
+                          ("new " + $1->getstring() != $3->getstring()))
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg type doesn't match right arg "\
+                             << "type in =" << endl;
+                            $$->setval($1->getstring());
+                          }
+                          else
+                          {
+                            $$->setval($1->getstring());
+                          }
+                        }
+            | name LPAREN arglist RPAREN SEMI {
+                          $$ = new nodeStatement(7, 4, $1, $3);
+                          $$->setval($1->getstring());
+                          if(myTypeTable.lookup($1->getstring()) != nullptr)
+                          {
+                          cout << scanner.lineno() << ":" << firstColumn\
+                          << ":Error constructors cannot be called directly"\
+                          << endl;
+                          }
+                        }
+            | PRINT LPAREN arglist RPAREN SEMI {
+                          $$ = new nodeStatement(7, 6, $3);
+                          $$->setval("void");
+                        }
+            | conStatement {
+                          $$ = new nodeStatement(7, 7, $1);
+                        }
+            | WHILE LPAREN exp RPAREN statement {
+                          $$ = new nodeStatement(7, 8, $3, $5);
+                        }
+            | RETURN SEMI {
+                          $$ = new nodeStatement(7, 9);
+                        }
+            | RETURN exp SEMI {
+                          if (current->getParent()->lookup(current->myName) \
+                          != $2->getstring())
+                          {
+                          cout << scanner.lineno() << ":" << firstColumn <<\
+                          ":Error return statement doesn't match return type"\
+                           << endl;
+                          }
+                          $$ = new nodeStatement(7, 10, $2);
+                        }
+            | subblock     {
+                          $$ = new nodeStatement(7, 11, $1);
+                        }
+;
+
+subblock : blockHead lVarDecs statements RBRACE {
+                          $$ = new nodeBlock(5, 1, $2, $3);
+                          current = current->getParent();
+                        }
+        |blockHead lVarDecs RBRACE {
+                          $$ = new nodeBlock(5, 2, $2);
+                          current = current->getParent();
+                        }
+        |blockHead statements RBRACE {
+                          $$ = new nodeBlock(5, 3, $2);
+                          current = current->getParent();
+                        }
+        |blockHead RBRACE  {
+                          $$ = new nodeBlock(5, 4);
+                          current = current->getParent();
+                        }
+        |blockHead statements error {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Expected }" << endl;
+                          yyerrok;
+                        }
+;
+
+blockHead: LBRACE       {
+                          SymbolTable* classTable = new SymbolTable(current,\
+                          "@" + blkNum);
+                          Entry * myEntry = new Entry("@" + blkNum,\
+                          "", classTable);
+                          current->insert("@" + blkNum, myEntry);
+                          blkNum++;
+                          current = classTable;
+                        }
+;
+
+name:   THIS DOT ident  {
+                          $$ = new nodeName(8, 1);
+                          $$->setval(current->lookup($3->getstring()));
+                        }
+        |ident          {
+                          $$ = new nodeName(8, 2, $1);
+                          $$->setval(current->lookup($1->getstring()));
+                        }
+        |name DOT ident {
+                          $$ = new nodeName(8, 3, $1, $3);
+                          string varInt = "int";
+                          string varVoid = "void";
+                          if($1->getstring() == varInt || $1->getstring()\
+                           == varVoid)
+                          {
+                          cout << scanner.lineno() << ":" << firstColumn\
+                          << ":Error incorrect type in name.ident" << endl;
+                          $$->setval("int");
+                          } 
+                          else if (myTypeTable.lookup($1->getstring()) ==\
+                           nullptr)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn\
+                            << ":Error undeclared var in name.ident" << endl;
+                            $$->setval("not found");
+                          }
+                          else
+                          {
+                          $$->setval(myTypeTable.lookup($1->getstring())->\
+                          myTypeST->lookup($3->getstring()));
+                          }
+                        }
+        |name ebracketexps {
+                          $$ = new nodeName(8, 5, $1, $2);
+                        }
+        | name error ident {
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << ":: "; //<<contents of line << endl;
+                          cout << "Error. Perhaps you meant period?" << endl;
+                          yyerrok;
+                        }
+        | name DOT THIS {                          
+                          cout << scanner.lineno() << ":" << firstColumn;
+                          cout << "Error. keyword THIS must be start of name"\
+                          << endl << "This variable will be ignored." << endl;
+                        }
+;
+
+arglist:%empty          
+        | exps          {
+                          $$ = new nodeArglist(8, 2, $1);
+                          $$->setval(" " +$1->getstring());
+                        }
+;
+
+conStatement: IF LPAREN exp RPAREN statement {
+                          $$ = new nodeConStatement(8, 1, $3, $5);
+                        }
+              | IF LPAREN exp RPAREN statement ELSE statement{
+                          $$ = new nodeConStatement(8, 2, $3, \
+                          new Node($5, $7));
+                        }
+;
+
+
+exps: exp               {
+                          $$ = new nodeExps(9, 1, $1);
+                          $$->setval($1->getstring());
+                        }
+      | exp COMMA exps  {
+                          $$ = new nodeExps(9, 2, $1,$3);
+                          $$->setval($1->getstring() + " " +\
+                           $3->getstring());
+                        } 
+;
+
+exp:   name             {
+                          $$ = new nodeExp(10, 1, $1);
+                          $$->setval($1->getstring());
+                        } 
+       |NUM             {       
+                          $$=new nodeExp(10, 2);
+                          $$->setval("int");
+                        }
+       | NULLT          { 
+                          $$=new nodeExp(10, 3);
+                          $$->setval("null");
+                        }
+       |name LPAREN arglist RPAREN {
+                          $$ = new nodeExp(10, 4, $1, $3);
+                          $$->setval($1->getstring());
+                          if(myTypeTable.lookup($1->getstring()) != nullptr)
+                          {
+                          cout << scanner.lineno() << ":" << firstColumn\
+                          << ":Error constructors cannot be called directly"\
+                          << endl;
+                          }
+                        }
+       |READ LPAREN RPAREN {
+                          $$ = new nodeExp(10, 5);
+                          $$->setval("int");
+                        }
+       |newexp          {
+                          $$ = new nodeExp(10, 6, $1);
+                          $$->setval($1->getstring());
+                        }
+       | exp PLUS exp   { 
+                          $$=new nodeExp(10, 7, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in +" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in +" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp MINUS exp  { 
+                          $$=new nodeExp(10, 8, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in -" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in -" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp OR exp     { 
+                          $$=new nodeExp(10, 9, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in ||" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in ||" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp TIMES exp  { 
+                          $$=new nodeExp(10, 10, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in *" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in *" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp DIV exp    {
+                          $$=new nodeExp(10, 11, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in /" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in /" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp MOD exp    {
+                          $$=new nodeExp(10, 12, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in %" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in %" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp AND exp    {
+                          $$=new nodeExp(10, 13, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in &&" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in &&" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp EQ exp     {
+                          $$=new nodeExp(10, 14, $1,$3);
+                          string varInt = "int";
+                          string varNull = "null";
+                          if ($1->getstring() == varNull) 
+                          {
+                            if ($3->getstring() == varInt)
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg type doesn't match right arg "\
+                             << "type in ==" << endl;
+                            }
+                          }
+                          else if($3->getstring() == varNull)
+                          {
+                            if ($1->getstring() == varInt)
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg type doesn't match right arg "\
+                             << "type in ==" << endl;
+                            }
+                          }
+                          else if (($1->getstring() != $3->getstring()) && \
+                          ("new " + $1->getstring() != $3->getstring()))
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg type doesn't match right arg "\
+                             << "type in ==" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp NE exp     {
+                          $$=new nodeExp(10, 15, $1,$3);
+                          string varInt = "int";
+                          string varNull = "null";
+                          if ($1->getstring() == varNull) 
+                          {
+                            if ($3->getstring() == varInt)
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg type doesn't match right arg "\
+                             << "type in !=" << endl;
+                            }
+                          }
+                          else if($3->getstring() == varNull)
+                          {
+                            if ($1->getstring() == varInt)
+                            {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg type doesn't match right arg "\
+                             << "type in !=" << endl;
+                            }
+                          }
+                          else if (($1->getstring() != $3->getstring()) && \
+                          ("new " + $1->getstring() != $3->getstring()))
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg type doesn't match right arg "\
+                             << "type in !=" << endl;
+                          }
+                            $$->setval($1->getstring());
+                        }
+       | exp GE exp     {
+                          $$=new nodeExp(10, 16, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in >=" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in >=" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp LE exp     { 
+                          $$=new nodeExp(10, 17, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in <=" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in <=" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp GT exp     {
+                          $$=new nodeExp(10, 18, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in >" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in >" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | exp LT exp     { 
+                          $$=new nodeExp(10, 19, $1,$3);
+                          string varInt = "int";
+                          if ($1->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error left arg is not type int in <" << endl;
+                          }
+                          if ($3->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error right arg is not type int in <" << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | MINUS exp  %prec NEG { 
+                          $$=new nodeExp(10, 20, $2);
+                          string varInt = "int";
+                          if ($2->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error arg is not type int in uminus." << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | PLUS exp  %prec UPLUS { 
+                          $$=new nodeExp(10, 21, $2);
+                          string varInt = "int";
+                          if ($2->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error arg is not type int in uplus." << endl;
+                          }
+                          $$->setval("int");
+                        }
+       | LPAREN exp RPAREN    { 
+                          $$=new nodeExp(10, 22, $2);
+                          $$->setval($2->getstring());
+                        }
+       | NOT exp        { 
+                          $$=new nodeExp(10, 23, $2);
+                          $$->setval("int");
+                        }
+;
+
+newexp: NEW ident LPAREN arglist RPAREN {
+                          $$ = new nodeNewexp(11, 1, $4); 
+                          $$->setval("new " + $2->getstring());
+                          bool found = false;
+                          Entry *temp = myTypeTable.lookup($2->getstring());
+                          for(int i = 1; i <= temp->myTypeST->consCount; i++)
+                          {
+                            if(temp->myTypeST->table[""+i]->myTypeST->paramList\
+                             == $4->getstring())
+                            {
+                              found = true;
+                            }
+                          }
+                          if (!found)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error no matching constructor found." << endl;
+                          }
+                        }
+        |NEW INT        {
+                          $$ = new Node(); 
+                          $$->setval("new int");
+                        }
+        |NEW INT ebracketexps {
+                          $$ = new nodeNewexp(11, 3, $3); 
+                          $$->setval("new int" + $3->getstring());
+                        }
+        |NEW ident        {
+                          $$ = new nodeNewexp(11, 2, $2);
+                          $$->setval("new " + $2->getstring()); 
+                        }
+        |NEW ident ebracketexps {
+                          $$ = new nodeNewexp(11, 3, $2,$3); 
+                          $$->setval("new "+ $2->getstring()\
+                          + $3->getstring());
+                        }
+;
+
+bracketexps:  bracketexp {
+                          $$ = new nodeBracketExps(12, 1, $1);
+                          $$->setval(1);
+                        }
+              |bracketexp bracketexps {
+                          $$ = new nodeBracketExps(12, 2, $1,$2);
+                          $$->setval(1 + $2->getint());
+                        }
+              | multibrackets {
+                          $$ = new Node($1);
+                          $$->setval($1->getint());
+                        }
+;
+
+bracketexp: LBRACK exp RBRACK {
+                          $$ = new nodeBracketExp(13, 1, $2);
+                          string varInt = "int";
+                          if ($2->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error val in [] is not of type int." << endl;
+                          }
+                        }
+;
+
+multibrackets: LBRACK RBRACK {
+                          $$ = new nodeMultibrackets(12, 1);
+                          $$->setval(1);
+                        }
+               |multibrackets LBRACK RBRACK {
+                          $$ = new nodeMultibrackets(12, 2, $1);
+                          $$->setval(1+ $1->getint());
+                        }
+;
+
+ebracketexps:  ebracketexp {
+                          $$ = new nodeBracketExps(12, 1, $1);
+                          $$->setval("[]");
+                        }
+              |ebracketexp ebracketexps {
+                          $$ = new nodeBracketExps(12, 2, $1,$2);
+                          $$->setval("[]"+$2->getstring());
+                        }
+              | emultibrackets {
+                          $$ = new Node($1);
+                          $$->setval($1->getstring());
+                        }
+;
+
+ebracketexp: LBRACK exp RBRACK {
+                          $$ = new nodeBracketExp(13, 1, $2);
+                          string varInt = "int";
+                          if ($2->getstring() != varInt)
+                          {
+                            cout << scanner.lineno() << ":" << firstColumn <<\
+                            ":Error val in [] is not of type int." << endl;
+                          }
+                        }
+;
+
+emultibrackets: LBRACK RBRACK {
+                          $$ = new nodeMultibrackets(12, 1);
+                          $$->setval("[]");
+                        }
+               |emultibrackets LBRACK RBRACK {
+                          $$ = new nodeMultibrackets(12, 2, $1);
+                          $$->setval("[]" + $1->getstring());
+                          cout << scanner.lineno() << ":" << firstColumn <<\
+                          ":Error only one [] can be empty." << endl;
+                        }
+;
+
+ident: ID               {
+                          $$ = new Node();
+                          $$ -> setval(scanner.YYText());
+                        }
+;
+%%

@@ -1,0 +1,44 @@
+class foo {
+  int a;
+  int b;
+  foo(test param, extra boots)
+  {
+     int a;
+     this.a = 5;
+     this.x.y.z = 1;
+     a = 5 + 4;
+     b = x + 3;
+  }
+  int main(int z)
+  {
+    test i;
+    extra j;
+    foo a;
+    foo b;
+    int x;
+    a = new foo(i, j);
+    b = new foo(x);
+    foo (x);
+    boo (x);
+    return z;
+  }
+  int main()
+  {
+    int q;
+    return a;
+  }
+  int main(int p)
+  {
+    int [] [] f;
+    int j;
+    f = new int [] [];
+    f = new int [7][];
+    f = new int [7][7];
+  }
+  goo boo(int a)
+  {
+    this.a = 2;
+    b=a;
+    return 2;
+  }
+}
